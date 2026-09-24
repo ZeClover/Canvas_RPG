@@ -112,4 +112,34 @@ describe("CampaignStore", () => {
 
     expect(store.getSnapshot().entities.find((entity) => entity.id === quest.id)?.status).toBe("Ativa");
   });
+
+  it("Módulos: desligar rules_engine para a avaliação das regras, sem apagar a regra", () => {
+    const store = new CampaignStore(createDemoCampaign());
+    const ruleId = store.getSnapshot().entities.find((entity) => entity.kind === "rule")!.id;
+    store.setEnabledModules(store.getSnapshot().campaign.enabledModules.filter((key) => key !== "rules_engine"));
+
+    const dungeon = store.getSnapshot().entities.find((entity) => entity.title === "A Dungeon")!;
+    const quest = store.getSnapshot().entities.find((entity) => entity.title === "O Exercício Perigoso")!;
+    store.updateEntity(dungeon.id, { status: "Instável" });
+
+    expect(store.getSnapshot().entities.find((entity) => entity.id === quest.id)?.status).toBe("Ativa");
+    expect(store.getSnapshot().entities.some((entity) => entity.id === ruleId)).toBe(true);
+
+    // religar o módulo não recupera o disparo perdido (não é retroativo),
+    // mas a próxima transição volta a funcionar normalmente
+    store.setEnabledModules([...store.getSnapshot().campaign.enabledModules, "rules_engine"]);
+    store.updateEntity(dungeon.id, { status: "Estável" });
+    store.updateEntity(dungeon.id, { status: "Instável" });
+    expect(store.getSnapshot().entities.find((entity) => entity.id === quest.id)?.status).toBe("Suspensa");
+  });
+
+  it("Módulos: setEnabledModules persiste na campanha e não entra no histórico de undo", () => {
+    const store = new CampaignStore(createDemoCampaign());
+    const before = store.getSnapshot().entities.length;
+    store.setEnabledModules(["npc_brain"]);
+    expect(store.getSnapshot().campaign.enabledModules).toEqual(["npc_brain"]);
+    store.undo(); // não deve afetar o toggle de módulos, que não passa por commit()
+    expect(store.getSnapshot().campaign.enabledModules).toEqual(["npc_brain"]);
+    expect(store.getSnapshot().entities.length).toBe(before);
+  });
 });

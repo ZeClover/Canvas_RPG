@@ -6,6 +6,8 @@
 // write these same two tables, never a separate store. That is the whole
 // point of the "não quero informação duplicada" requirement.
 
+import type { ModuleKey } from "./modules";
+
 export type EntityKind =
   | "npc"
   | "player"
@@ -147,6 +149,10 @@ export interface Campaign {
   description: string;
   color: string;
   icon: string | null;
+  /** Which specialized tools (Fase 2+) are active in this campaign — see
+   * domain/modules.ts. A module being off never deletes data, it just
+   * hides that kind's editor section and its Ferramentas entry. */
+  enabledModules: ModuleKey[];
   createdAt: number;
   updatedAt: number;
 }

@@ -1,4 +1,4 @@
-# RPG World Canvas — v0.4.0 (Fase 4)
+# RPG World Canvas — v0.4.1 (Fase 4 + módulos por campanha)
 
 Um motor visual de campanhas de RPG de mesa: NPCs, quests, locais, facções, segredos, sessões e tudo mais vivem como o **mesmo dado**, visto de formas diferentes (Canvas, Views, busca). Não é um VTT, não é uma wiki, não é um gerenciador de projeto — é uma memória visual e interativa do universo.
 
@@ -16,11 +16,18 @@ Um **grupo visual** (a "área" onde você arrasta a FAMÍLIA KAMAU ou a SESSÃO 
 
 Uma **View** nunca duplica dados — ela só guarda um filtro (`kinds`, `tags`, `groupIds`, `status`, `search`) e decide o que aparece. "NPCs", "Quests", "Mistérios" já vêm prontas; criar uma view nova é só salvar outro filtro.
 
+## Módulos: cada campanha liga só o que quer usar
+
+A partir da Fase 2, toda ferramenta especializada (NPC Brain, Quest Studio, Mystery Board, Rules Engine, Settlement Engine...) é um **módulo opcional por campanha** — uma campanha de mistério de uma sessão só pode querer Mystery Board + Causalidade, sem nada de economia ou progresso de assentamento; uma sandbox longa pode querer o oposto. `Campaign.enabledModules` guarda a lista; `Ferramentas → Módulos desta campanha` liga/desliga a qualquer momento.
+
+Desligar um módulo nunca apaga nada: ele só esconde a seção especializada daquele tipo de card no inspetor (ex.: `NpcSection` some se `npc_brain` estiver desligado) e o item correspondente no menu Ferramentas. O tipo de elemento em si (`npc`, `city`, `rule`...) continua existindo como um card normal — título, resumo, etiquetas, relações — porque a arquitetura é "um dado, várias lentes": um módulo é só mais uma lente, não uma tabela separada. Religar o módulo faz a seção reaparecer com exatamente os mesmos dados. A única exceção com efeito colateral real é o `rules_engine`: desligado, o `CampaignStore` também para de avaliar as regras da campanha (nenhuma automação roda escondida).
+
 ```
 src/
   domain/     tipos, registro de tipos de card/relação, câmera/espaço, índice espacial, orçamento de renderização,
               filtro de views, leitores de campos por tipo (NPC/Quest/Sessão/Evento/Regra), graph.ts (BFS/grau/
-              cadeia causal — Mystery Board e Causalidade), rulesEngine.ts (avaliação pura do Rules Engine)
+              cadeia causal — Mystery Board e Causalidade), rulesEngine.ts (avaliação pura do Rules Engine),
+              modules.ts (registro dos módulos opcionais por campanha e o mapa tipo → módulo dono)
   data/       IndexedDB (banco 100% local), arquivo de campanha (.rpgworld) com validação estrita, seed/demo
   state/      CampaignStore — única fonte de verdade reativa (undo/redo, autosave granular, avalia as regras)
   canvas/     CanvasEngine — um único <canvas> visível e interativo (ver abaixo)
@@ -112,7 +119,7 @@ npm run dev
 ## Testes
 
 ```bash
-npm test           # 71 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
+npm test           # 81 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
 npm run build       # TypeScript estrito + build de produção (Vite)
 npx playwright install chromium   # uma vez
 npm run test:e2e    # teste visual/end-to-end (Playwright): abre a campanha de exemplo, arrasta um NPC real,

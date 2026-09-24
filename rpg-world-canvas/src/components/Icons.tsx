@@ -33,4 +33,5 @@ export const Icons = {
   tools: (props: IconProps) => <IconBase {...props}><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.7 2.7-2-2 2.7-2.7Z" /></IconBase>,
   chevronDown: (props: IconProps) => <IconBase {...props}><path d="m6 9 6 6 6-6" /></IconBase>,
   coin: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M9.5 15.5c.5.7 1.4 1 2.5 1 1.7 0 3-.8 3-2s-1.3-1.8-3-2-3-.8-3-2 1.3-2 3-2c1.1 0 2 .3 2.5 1" /></IconBase>,
+  toggles: (props: IconProps) => <IconBase {...props}><rect x="3" y="5" width="18" height="6" rx="3" /><circle cx="9" cy="8" r="1.6" fill="currentColor" stroke="none" /><rect x="3" y="13" width="18" height="6" rx="3" /><circle cx="15" cy="16" r="1.6" fill="currentColor" stroke="none" /></IconBase>,
 };

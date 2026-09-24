@@ -347,3 +347,14 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 /* Economy & Resources panel: critical stock highlight */
 .entity-row.is-critical { border-color: rgba(251,113,133,.4); background: rgba(251,113,133,.06); }
 .entity-row.is-critical .entity-row-meta { color: #fda4af; }
+.tool-panel-columns.is-single-column { grid-template-columns: 1fr; }
+
+/* Modules panel (per-campaign feature toggles) */
+.modules-intro { margin: -6px 0 18px; color: #8994aa; font-size: 11px; line-height: 1.5; }
+.module-list { display: grid; gap: 7px; margin: 0 0 4px; padding: 0; list-style: none; }
+.module-row label { display: flex; align-items: start; gap: 11px; padding: 10px 11px; cursor: pointer; background: #0c1019; border: 1px solid #242c3d; border-radius: 10px; }
+.module-row label:hover { border-color: #3a4560; }
+.module-row input { flex-shrink: 0; margin-top: 2px; accent-color: var(--violet); width: 16px; height: 16px; cursor: pointer; }
+.module-row-body { display: grid; gap: 3px; }
+.module-row-body strong { font-size: 12px; }
+.module-row-body small { color: #8994aa; font-size: 10px; line-height: 1.45; }

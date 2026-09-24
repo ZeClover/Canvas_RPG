@@ -1,5 +1,6 @@
 import { kindConfig } from "../domain/entityKindRegistry";
 import { createId } from "../domain/id";
+import type { ModuleKey } from "../domain/modules";
 import { evaluateRulesOnce } from "../domain/rulesEngine";
 import type {
   Campaign,
@@ -124,6 +125,7 @@ export class CampaignStore {
    * pass compares against the entities from *before that pass*, so a rule
    * only fires once per actual transition. */
   private applyRules(before: Snapshot, next: CampaignState): CampaignState {
+    if (!next.campaign.enabledModules.includes("rules_engine")) return next;
     let entities = next.entities;
     let relations = next.relations;
     let previousById = new Map(before.entities.map((entity) => [entity.id, entity]));
@@ -452,6 +454,22 @@ export class CampaignStore {
       relations: state.relations.filter((relation) => relation.id !== id),
       selectedRelationId: state.selectedRelationId === id ? null : state.selectedRelationId,
     }));
+  }
+
+  // ---- campaign settings ------------------------------------------------------
+
+  /** Campaign-level settings (title, color, which modules are enabled...)
+   * are not canvas content, so — like setActiveView — this bypasses
+   * commit()/undo entirely and just marks the campaign dirty for the next
+   * autosave. */
+  updateCampaign(updates: Partial<Campaign>): void {
+    this.state = { ...this.state, campaign: { ...this.state.campaign, ...updates, updatedAt: Date.now() }, dirty: true };
+    this.emit();
+    this.scheduleSave();
+  }
+
+  setEnabledModules(modules: ModuleKey[]): void {
+    this.updateCampaign({ enabledModules: modules });
   }
 
   // ---- views ----------------------------------------------------------------

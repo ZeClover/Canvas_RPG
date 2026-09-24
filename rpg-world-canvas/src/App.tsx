@@ -10,6 +10,7 @@ import { Minimap } from "./components/Minimap";
 import { CausalityPanel } from "./components/panels/CausalityPanel";
 import { EconomyResourcesPanel } from "./components/panels/EconomyResourcesPanel";
 import { KnowledgeEnginePanel } from "./components/panels/KnowledgeEnginePanel";
+import { ModulesPanel } from "./components/panels/ModulesPanel";
 import { MysteryBoardPanel } from "./components/panels/MysteryBoardPanel";
 import { RulesEnginePanel } from "./components/panels/RulesEnginePanel";
 import { SettlementsPanel } from "./components/panels/SettlementsPanel";
@@ -31,6 +32,7 @@ import {
   type BackupInfo,
 } from "./data/repository";
 import { createDemoCampaign } from "./data/seed";
+import type { ModuleKey } from "./domain/modules";
 import type { CameraState, Campaign, EntityKind, WorldBounds, WorldPoint } from "./domain/types";
 import { CampaignStore } from "./state/campaignStore";
 import { useCampaign } from "./state/useCampaign";
@@ -147,6 +149,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [rulesOpen, setRulesOpen] = useState(false);
   const [settlementsOpen, setSettlementsOpen] = useState(false);
   const [economyOpen, setEconomyOpen] = useState(false);
+  const [modulesOpen, setModulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
 
@@ -229,15 +232,20 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const saveLabel = state.saving ? "Salvando…" : state.dirty ? "Alterações locais" : state.lastSavedAt ? "Salvo agora" : "Salvo localmente";
   const editEntity = editing ? state.entities.find((entity) => entity.id === editing.id) : null;
 
-  const tools: ToolMenuItem[] = [
-    { key: "timeline", label: "Timeline", icon: Icons.clock, onClick: () => setTimelineOpen(true) },
-    { key: "knowledge", label: "Conhecimento", icon: Icons.book, onClick: () => setKnowledgeOpen(true) },
-    { key: "mystery", label: "Mistério", icon: Icons.web, onClick: () => setMysteryOpen(true) },
-    { key: "causality", label: "Causalidade", icon: Icons.branch, onClick: () => setCausalityOpen(true) },
-    { key: "rules", label: "Regras", icon: Icons.gear, onClick: () => setRulesOpen(true) },
-    { key: "settlements", label: "Progresso do mundo", icon: Icons.world, onClick: () => setSettlementsOpen(true) },
-    { key: "economy", label: "Economia & recursos", icon: Icons.coin, onClick: () => setEconomyOpen(true) },
+  const enabledModules = state.campaign.enabledModules;
+  const hasModule = (...keys: ModuleKey[]) => keys.some((key) => enabledModules.includes(key));
+
+  const allTools: Array<ToolMenuItem & { visible: boolean }> = [
+    { key: "timeline", label: "Timeline", icon: Icons.clock, onClick: () => setTimelineOpen(true), visible: hasModule("timeline") },
+    { key: "knowledge", label: "Conhecimento", icon: Icons.book, onClick: () => setKnowledgeOpen(true), visible: hasModule("knowledge_engine") },
+    { key: "mystery", label: "Mistério", icon: Icons.web, onClick: () => setMysteryOpen(true), visible: hasModule("mystery_board") },
+    { key: "causality", label: "Causalidade", icon: Icons.branch, onClick: () => setCausalityOpen(true), visible: hasModule("causality_engine") },
+    { key: "rules", label: "Regras", icon: Icons.gear, onClick: () => setRulesOpen(true), visible: hasModule("rules_engine") },
+    { key: "settlements", label: "Progresso do mundo", icon: Icons.world, onClick: () => setSettlementsOpen(true), visible: hasModule("settlement_engine") },
+    { key: "economy", label: "Economia & recursos", icon: Icons.coin, onClick: () => setEconomyOpen(true), visible: hasModule("economy_engine", "resource_engine") },
+    { key: "modules", label: "Módulos desta campanha", icon: Icons.toggles, onClick: () => setModulesOpen(true), visible: true },
   ];
+  const tools: ToolMenuItem[] = allTools.filter((tool) => tool.visible);
 
   return (
     <div className="workspace-screen">
@@ -287,6 +295,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
             entity={selectedEntity}
             allEntities={state.entities}
             relations={selectedEntityRelations}
+            enabledModules={enabledModules}
             onUpdate={(updates) => store.updateEntity(selectedEntity.id, updates)}
             onClose={() => store.clearSelection()}
             onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
@@ -383,8 +392,17 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
       {economyOpen && (
         <EconomyResourcesPanel
           entities={state.entities}
+          showItems={hasModule("economy_engine")}
+          showResources={hasModule("resource_engine")}
           onClose={() => setEconomyOpen(false)}
           onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {modulesOpen && (
+        <ModulesPanel
+          enabledModules={enabledModules}
+          onClose={() => setModulesOpen(false)}
+          onChange={(modules) => store.setEnabledModules(modules)}
         />
       )}
     </div>

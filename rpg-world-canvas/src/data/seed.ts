@@ -1,5 +1,6 @@
 import { createId } from "../domain/id";
 import { kindConfig } from "../domain/entityKindRegistry";
+import { defaultEnabledModules } from "../domain/modules";
 import type { Campaign, CampaignData, Entity, EntityKind, Relation, RelationType, View } from "../domain/types";
 
 export function createDefaultViews(campaignId: string): View[] {
@@ -76,6 +77,7 @@ export function createDemoCampaign(): CampaignData {
     description: "Aulas, professores, alunos, facções e a Dungeon sob a escola.",
     color: "#a78bfa",
     icon: "🪄",
+    enabledModules: defaultEnabledModules(),
     createdAt: now,
     updatedAt: now,
   };

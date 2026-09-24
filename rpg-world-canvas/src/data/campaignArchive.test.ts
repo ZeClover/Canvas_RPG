@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ALL_MODULE_KEYS } from "../domain/modules";
 import { createDemoCampaign } from "./seed";
 import { parseCampaignArchive, prepareImportedCampaign, safeCampaignFileName, serializeCampaignArchive } from "./campaignArchive";
 
@@ -51,5 +52,19 @@ describe("arquivo de campanha", () => {
 
   it("gera um nome seguro para o arquivo", () => {
     expect(safeCampaignFileName("Academia Mágica: Ano I")).toBe("Academia-Magica-Ano-I.rpgworld");
+  });
+
+  it("um arquivo salvo antes do sistema de módulos existir importa com tudo habilitado", () => {
+    const raw = JSON.parse(serializeCampaignArchive(createDemoCampaign()));
+    delete raw.data.campaign.enabledModules;
+    const restored = parseCampaignArchive(JSON.stringify(raw));
+    expect(restored.data.campaign.enabledModules.sort()).toEqual([...ALL_MODULE_KEYS].sort());
+  });
+
+  it("chaves de módulo desconhecidas num arquivo importado são descartadas, não travam a importação", () => {
+    const raw = JSON.parse(serializeCampaignArchive(createDemoCampaign()));
+    raw.data.campaign.enabledModules = ["npc_brain", "modulo_que_nao_existe_mais"];
+    const restored = parseCampaignArchive(JSON.stringify(raw));
+    expect(restored.data.campaign.enabledModules).toEqual(["npc_brain"]);
   });
 });

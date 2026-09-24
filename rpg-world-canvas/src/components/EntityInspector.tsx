@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CARD_KINDS, kindConfig } from "../domain/entityKindRegistry";
+import { isKindSectionEnabled, type ModuleKey } from "../domain/modules";
 import { relationConfig } from "../domain/relationTypeRegistry";
 import { imageFileToDataUrl, normalizeExternalImageUrl } from "../data/imageProcessing";
 import type { Entity, EntityKind, Relation, RelationType, Visibility } from "../domain/types";
@@ -19,6 +20,7 @@ interface EntityInspectorProps {
   entity: Entity;
   allEntities: Entity[];
   relations: Relation[];
+  enabledModules: ModuleKey[];
   onUpdate: (updates: Partial<Entity>) => void;
   onClose: () => void;
   onFocusEntity: (id: string) => void;
@@ -28,7 +30,7 @@ interface EntityInspectorProps {
 
 const VISIBILITY_LABEL: Record<Visibility, string> = { gm_only: "Só o mestre", revealed: "Revelado aos jogadores", partial: "Parcialmente revelado" };
 
-export function EntityInspector({ entity, allEntities, relations, onUpdate, onClose, onFocusEntity, onCreateRelation, onDeleteRelation }: EntityInspectorProps) {
+export function EntityInspector({ entity, allEntities, relations, enabledModules, onUpdate, onClose, onFocusEntity, onCreateRelation, onDeleteRelation }: EntityInspectorProps) {
   const [tags, setTags] = useState(entity.tags.join(", "));
   const [summary, setSummary] = useState(entity.summary);
   const [status, setStatus] = useState(entity.status ?? "");
@@ -52,6 +54,7 @@ export function EntityInspector({ entity, allEntities, relations, onUpdate, onCl
   );
   const entityById = useMemo(() => new Map(allEntities.map((candidate) => [candidate.id, candidate])), [allEntities]);
   const isGroup = entity.kind === "group";
+  const showKindSection = isKindSectionEnabled(entity.kind, enabledModules);
 
   return (
     <aside className="node-inspector" aria-label="Propriedades do elemento">
@@ -88,7 +91,7 @@ export function EntityInspector({ entity, allEntities, relations, onUpdate, onCl
         <textarea value={summary} onChange={(event) => setSummary(event.target.value)} onBlur={() => summary !== entity.summary && onUpdate({ summary })} placeholder="Detalhes, contexto, lembretes…" />
       </label>
 
-      {!isGroup && entity.kind !== "quest" && entity.kind !== "side_quest" && entity.kind !== "rule" && (
+      {!isGroup && !(showKindSection && (entity.kind === "quest" || entity.kind === "side_quest" || entity.kind === "rule")) && (
         <label>
           Status
           <input value={status} onChange={(event) => setStatus(event.target.value)} onBlur={() => onUpdate({ status: status.trim() || null })} placeholder="Ex.: Ativa, Concluída, Vivo…" />
@@ -158,16 +161,16 @@ export function EntityInspector({ entity, allEntities, relations, onUpdate, onCl
         </>
       )}
 
-      {entity.kind === "npc" && <NpcSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
-      {(entity.kind === "quest" || entity.kind === "side_quest") && (
+      {showKindSection && entity.kind === "npc" && <NpcSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && (entity.kind === "quest" || entity.kind === "side_quest") && (
         <QuestSection status={entity.status} fields={entity.fields} onUpdateStatus={(value) => onUpdate({ status: value })} onUpdate={(fields) => onUpdate({ fields })} />
       )}
-      {entity.kind === "session" && <SessionSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
-      {entity.kind === "rule" && <RuleSection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
-      {entity.kind === "city" && <SettlementSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
-      {entity.kind === "project" && <ProjectSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
-      {entity.kind === "item" && <EconomySection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
-      {entity.kind === "resource" && <ResourceSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "session" && <SessionSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "rule" && <RuleSection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "city" && <SettlementSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "project" && <ProjectSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "item" && <EconomySection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "resource" && <ResourceSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
 
       <div className="size-fields">
         <label>Largura<input value={Math.round(entity.width)} inputMode="numeric" onChange={(event) => onUpdate({ width: Math.max(80, Number(event.target.value) || entity.width) })} /></label>

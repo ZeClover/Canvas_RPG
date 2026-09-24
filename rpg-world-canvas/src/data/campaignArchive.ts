@@ -1,4 +1,5 @@
 import { createId } from "../domain/id";
+import { defaultEnabledModules, isModuleKey, type ModuleKey } from "../domain/modules";
 import { ENTITY_KINDS } from "../domain/types";
 import type {
   Campaign,
@@ -179,6 +180,17 @@ function parseView(value: unknown, campaignId: string): View {
   };
 }
 
+function parseEnabledModules(value: unknown): ModuleKey[] {
+  // Missing (older export, or a campaign saved before this feature
+  // existed) defaults to everything on — nothing changes until the GM
+  // deliberately turns a module off. Unknown keys are dropped rather than
+  // rejecting the whole import, same defensive spirit as a fields reader.
+  if (value === undefined) return defaultEnabledModules();
+  if (!Array.isArray(value)) return defaultEnabledModules();
+  const known = value.filter((item): item is ModuleKey => typeof item === "string" && isModuleKey(item));
+  return known.length ? [...new Set(known)] : [];
+}
+
 function parseCampaign(value: unknown): Campaign {
   const source = record(value, "Campanha");
   return {
@@ -187,6 +199,7 @@ function parseCampaign(value: unknown): Campaign {
     description: source.description === undefined ? "" : string(source.description, "Descrição da campanha", 10_000),
     color: string(source.color, "Cor da campanha", 64),
     icon: nullableString(source.icon, "Ícone da campanha", 16),
+    enabledModules: parseEnabledModules(source.enabledModules),
     createdAt: number(source.createdAt, "Criação da campanha", 0, Number.MAX_SAFE_INTEGER),
     updatedAt: number(source.updatedAt, "Atualização da campanha", 0, Number.MAX_SAFE_INTEGER),
   };

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { BackupInfo } from "../data/repository";
 import { createId } from "../domain/id";
+import { defaultEnabledModules } from "../domain/modules";
 import type { Campaign } from "../domain/types";
 import { Icons } from "./Icons";
 
@@ -60,6 +61,7 @@ export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, o
       description: "Novo universo",
       color: CAMPAIGN_COLORS[campaigns.length % CAMPAIGN_COLORS.length],
       icon: "🌐",
+      enabledModules: defaultEnabledModules(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
