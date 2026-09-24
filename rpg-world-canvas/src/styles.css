@@ -330,3 +330,20 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .rule-section .rule-log { max-height: 160px; overflow: auto; }
 .rule-section .rule-log li { align-items: start; }
 .rule-section .rule-log svg { flex-shrink: 0; margin-top: 1px; color: var(--amber); }
+
+/* ProjectSection: derived progress bar (never stored, always computed from stages) */
+.progress-bar { height: 8px; margin: 8px 0 14px; overflow: hidden; background: #0c1019; border: 1px solid #242c3d; border-radius: 999px; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--violet-strong), var(--violet)); border-radius: 999px; transition: width .2s ease; }
+
+/* ResourceSection */
+.resource-critical-banner { margin-bottom: 14px; padding: 9px 10px; color: #fda4af; background: rgba(251,113,133,.08); border: 1px solid rgba(251,113,133,.2); border-radius: 9px; font-size: 10px; }
+
+/* Settlements panel (World Progression) */
+.settlement-list { max-height: 480px; }
+.settlement-row { align-items: center; }
+.settlement-last-log { overflow: hidden; color: #657088; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.settlement-stats { display: flex; flex-shrink: 0; gap: 10px; color: #cbd3e3; font-size: 11px; font-variant-numeric: tabular-nums; }
+
+/* Economy & Resources panel: critical stock highlight */
+.entity-row.is-critical { border-color: rgba(251,113,133,.4); background: rgba(251,113,133,.06); }
+.entity-row.is-critical .entity-row-meta { color: #fda4af; }

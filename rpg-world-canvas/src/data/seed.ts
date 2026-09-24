@@ -22,6 +22,8 @@ export function createDefaultViews(campaignId: string): View[] {
     view("Locais", "📍", ["location", "city", "region"]),
     view("Mistérios", "🔍", ["secret", "clue", "rumor"]),
     view("Regras", "🧩", ["rule"]),
+    view("Projetos", "🛠️", ["project"]),
+    view("Economia", "🎒", ["item", "resource"]),
   ];
 }
 
@@ -37,6 +39,7 @@ interface EntitySeed {
   groupKey?: string;
   status?: string;
   important?: boolean;
+  fields?: Record<string, unknown>;
 }
 
 function buildEntity(campaignId: string, seed: EntitySeed, groupIds: Map<string, string>, now: number): Entity {
@@ -52,7 +55,7 @@ function buildEntity(campaignId: string, seed: EntitySeed, groupIds: Map<string,
     imageSrc: null,
     tags: seed.tags ?? [],
     status: seed.status ?? null,
-    fields: {},
+    fields: seed.fields ?? {},
     x: seed.x,
     y: seed.y,
     width: config.width,
@@ -80,12 +83,18 @@ export function createDemoCampaign(): CampaignData {
   const groupSeeds: EntitySeed[] = [
     { key: "campus", kind: "group", title: "CAMPUS", x: -300, y: -300 },
     { key: "sessions", kind: "group", title: "SESSÕES", x: 2900, y: -300 },
+    { key: "region", kind: "group", title: "REGIÃO", x: -300, y: 1300 },
   ];
   const groupIds = new Map<string, string>();
+  const groupSizes: Record<string, { width: number; height: number }> = {
+    campus: { width: 2200, height: 1400 },
+    sessions: { width: 1600, height: 1400 },
+    region: { width: 1600, height: 700 },
+  };
   const groups = groupSeeds.map((seed) => {
     const entity = buildEntity(campaign.id, { ...seed, x: seed.x, y: seed.y }, groupIds, now);
-    entity.width = seed.key === "campus" ? 2200 : 1600;
-    entity.height = 1400;
+    entity.width = groupSizes[seed.key].width;
+    entity.height = groupSizes[seed.key].height;
     groupIds.set(seed.key, entity.id);
     return entity;
   });
@@ -105,6 +114,39 @@ export function createDemoCampaign(): CampaignData {
     { key: "e_alarm", kind: "event", title: "Alarme na Dungeon", x: 500, y: 680, summary: "Sinos tocam no meio da noite.", groupKey: "campus" },
     { key: "sess_01", kind: "session", title: "Sessão 01 · A Primeira Aula", x: 3000, y: -180, summary: "Abertura da campanha.", groupKey: "sessions" },
     { key: "sess_02", kind: "session", title: "Sessão 02 · A Dungeon Desperta", x: 3400, y: -180, summary: "O alarme toca.", groupKey: "sessions" },
+    { key: "region_vale", kind: "region", title: "Vale de Ashgrove", x: -180, y: 1420, summary: "A região ao redor da Academia, entre colinas e a floresta velha.", groupKey: "region" },
+    {
+      key: "city_ashgrove", kind: "city", title: "Vilarejo de Ashgrove", x: 160, y: 1420, summary: "Cresceu ao redor da Academia, vive do comércio com os alunos.", groupKey: "region",
+      fields: {
+        stage: "Vila", population: "~600", prosperity: 55, stability: 70,
+        governance: "Conselho de anciãos", defenses: "Milícia local, muralha baixa",
+        needs: ["mais grãos", "proteção contra a Dungeon"],
+        log: [{ id: "seed_settlement_log_1", at: 0, note: "Fundado há três gerações, cresceu ao redor da Academia." }],
+      },
+    },
+    {
+      key: "proj_ala_leste", kind: "project", title: "Restaurar a Ala Leste", x: 500, y: 1420, summary: "Reabrir a ala interditada após o incidente do ano passado.", groupKey: "region",
+      fields: {
+        goal: "Reabrir a ala leste da Academia, interditada desde o incidente.",
+        stages: [
+          { id: "seed_stage_1", text: "Avaliar danos estruturais", done: true },
+          { id: "seed_stage_2", text: "Convocar pedreiros", done: true },
+          { id: "seed_stage_3", text: "Reconstruir o telhado", done: false },
+          { id: "seed_stage_4", text: "Reencantar as wards", done: false },
+        ],
+        blockers: "Falta de recursos e mão de obra qualificada.",
+        deadline: "Antes do inverno",
+        notes: "",
+      },
+    },
+    {
+      key: "item_ring", kind: "item", title: "Anel do Vínculo", x: -180, y: 1700, summary: "Permite que duas pessoas sintam a direção uma da outra.", groupKey: "region",
+      fields: { price: 120, currency: "po", rarity: "Raro", tradeNotes: "Vendido só por Vivian, sob consulta." },
+    },
+    {
+      key: "res_racoes", kind: "resource", title: "Rações da Academia", x: 160, y: 1700, summary: "Estoque de comida usado em expedições à Dungeon.", groupKey: "region",
+      fields: { stock: 40, unit: "porções", criticalThreshold: 15, regenNote: "Reabastece 20 a cada sessão de mercado", notes: "Consumidas durante expedições à Dungeon." },
+    },
   ];
 
   const entityIds = new Map<string, string>();
@@ -162,6 +204,9 @@ export function createDemoCampaign(): CampaignData {
     { from: "q_exercise", to: "sq_grimorio", type: "leads_to" },
     { from: "n_vivian", to: "s_rune", type: "knows_about" },
     { from: "n_potter", to: "s_rune", type: "knows_about" },
+    { from: "city_ashgrove", to: "region_vale", type: "belongs_to" },
+    { from: "l_dungeon", to: "region_vale", type: "belongs_to" },
+    { from: "proj_ala_leste", to: "res_racoes", type: "requires" },
   ];
   const relations: Relation[] = relationSeeds.map((seed) => ({
     id: createId("relation"),

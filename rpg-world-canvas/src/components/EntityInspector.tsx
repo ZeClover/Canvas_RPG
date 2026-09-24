@@ -6,10 +6,14 @@ import type { Entity, EntityKind, Relation, RelationType, Visibility } from "../
 import { RELATION_TYPES } from "../domain/types";
 import { ColorPicker } from "./ColorPicker";
 import { Icons } from "./Icons";
+import { EconomySection } from "./sections/EconomySection";
 import { NpcSection } from "./sections/NpcSection";
+import { ProjectSection } from "./sections/ProjectSection";
 import { QuestSection } from "./sections/QuestSection";
+import { ResourceSection } from "./sections/ResourceSection";
 import { RuleSection } from "./sections/RuleSection";
 import { SessionSection } from "./sections/SessionSection";
+import { SettlementSection } from "./sections/SettlementSection";
 
 interface EntityInspectorProps {
   entity: Entity;
@@ -160,6 +164,10 @@ export function EntityInspector({ entity, allEntities, relations, onUpdate, onCl
       )}
       {entity.kind === "session" && <SessionSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {entity.kind === "rule" && <RuleSection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
+      {entity.kind === "city" && <SettlementSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {entity.kind === "project" && <ProjectSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {entity.kind === "item" && <EconomySection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {entity.kind === "resource" && <ResourceSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
 
       <div className="size-fields">
         <label>Largura<input value={Math.round(entity.width)} inputMode="numeric" onChange={(event) => onUpdate({ width: Math.max(80, Number(event.target.value) || entity.width) })} /></label>

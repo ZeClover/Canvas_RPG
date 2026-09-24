@@ -1,4 +1,4 @@
-# RPG World Canvas — v0.3.0 (Fase 3)
+# RPG World Canvas — v0.4.0 (Fase 4)
 
 Um motor visual de campanhas de RPG de mesa: NPCs, quests, locais, facções, segredos, sessões e tudo mais vivem como o **mesmo dado**, visto de formas diferentes (Canvas, Views, busca). Não é um VTT, não é uma wiki, não é um gerenciador de projeto — é uma memória visual e interativa do universo.
 
@@ -81,11 +81,21 @@ Todas as quatro ferramentas abaixo são **apenas leituras diferentes das mesmas 
 - **Butterfly Effect / Causalidade**: escolha uma decisão/evento/quest e veja a árvore completa — o que levou a isso e o que isso causou — seguindo as relações `causou`/`leva a`/`desbloqueia se…`, recursivo e à prova de ciclo;
 - **Rules Engine**: automação 100% determinística — "quando `<entidade>` chega ao status `<valor>`, então mude o status de `<entidade alvo>` / marque como importante / crie uma relação". Uma regra é uma `Entity` como qualquer outra (`kind: "rule"`), editada no mesmo inspetor de sempre; o `CampaignStore` avalia todas as regras a cada mudança, em passes limitados (no máximo 5) para permitir uma regra disparar outra (efeito cascata) sem nunca poder entrar em loop infinito. Cada disparo fica registrado no histórico da própria regra.
 
+## O que já funciona (Fase 4, conforme pedido)
+
+Quatro seções novas no inspetor (uma por tipo de card) mais dois painéis globais, todos determinísticos — nenhum número é simulado ou inferido, tudo é o que o mestre digitou:
+
+- **World Progression / Settlement Engine**: seção dedicada para cidades (`kind: "city"`) — estágio de crescimento (Acampamento → Metrópole → Em ruínas…), população, prosperidade e estabilidade (0–100), governança, defesas, necessidades e um histórico de eventos que o mestre anota manualmente após cada sessão (nunca gerado sozinho). O painel global **Progresso do mundo** lista todas as cidades ordenadas por prosperidade ou estabilidade.
+- **Project Engine**: seção dedicada para projetos (`kind: "project"`) — objetivo, etapas marcáveis (reaproveitando o mesmo editor de checklist da Quest Studio), prazo, bloqueios e notas. O progresso (`X/Y · Z%`) é sempre **derivado** das etapas marcadas, nunca armazenado — não tem como ficar dessincronizado.
+- **Economy Engine**: seção dedicada para itens (`kind: "item"`) — preço, moeda e raridade. O painel global **Economia & recursos** lista todos os itens ordenados por preço, com a média calculada ao vivo.
+- **Resource & Survival Engine**: seção dedicada para recursos (`kind: "resource"`) — estoque, unidade, limite crítico e nota de reposição/consumo. "Crítico" também é sempre derivado (estoque ≤ limite), nunca armazenado; o mesmo painel **Economia & recursos** lista os recursos com os críticos destacados em vermelho e ordenados primeiro.
+
+A topbar não ganhou botões novos — os dois painéis desta fase entraram no mesmo menu **Ferramentas** da Fase 3, que já foi desenhado para crescer sem estourar a barra.
+
 ## O que ainda não existe (fases seguintes, por design)
 
 Seguindo exatamente a ordem de fases pedida — não implementado de forma superficial, simplesmente ainda não começado:
 
-- **Fase 4** — World Progression/Settlement Engine, Project Engine, Economy Engine, Resource Engine.
 - **Fase 5** — Scene Composer, Foreshadowing Engine, Ecology Engine, Rumor Engine com templates.
 - **Fase 6** — Importação de transcrições, Campaign Health Dashboard, Player Knowledge View (o campo `visibility` em cada elemento já existe para isso, só falta a tela).
 - **Fase 7** — Multiverse Engine completo (o formato `UniverseLink` já existe no schema), World Communication System.
@@ -102,16 +112,16 @@ npm run dev
 ## Testes
 
 ```bash
-npm test           # 62 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
+npm test           # 71 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
 npm run build       # TypeScript estrito + build de produção (Vite)
 npx playwright install chromium   # uma vez
 npm run test:e2e    # teste visual/end-to-end (Playwright): abre a campanha de exemplo, arrasta um NPC real,
                      # tira screenshot antes/depois, recarrega e confirma que a posição persistiu
 ```
 
-Cobertura atual: validação/serialização do arquivo de campanha (inclui rejeição de hierarquia circular de grupos e relação órfã); `CampaignStore` (criar/mover/desfazer/refazer, mover grupo com descendentes, exclusão em cascata, relação sem duplicar, duplicar preservando agrupamento, troca de view, **regra semeada dispara sozinha ao mudar o status observado e não dispara de novo enquanto o status não muda de novo**); `CanvasEngine` (fitAll seguro contra viewport 0×0, resize preservando câmera, arrastar, redimensionar, seleção múltipla, criar relação pela alça, clicar em filho de grupo arrasta o grupo, Alt+arrastar duplica, zoom no cursor, pan, `Esc` cancela); `repository` com IndexedDB real (diff granular não reescreve tudo, backup e restauração, cascata de relações órfãs); filtro de views; leitores de campos por tipo (NPC/Quest/Sessão/Evento/Regra/estatísticas de relação — sempre caem no padrão em vez de quebrar com dado antigo ou malformado); `graph.ts` (busca em largura com limite de profundidade, contagem de grau, pistas soltas, cadeia causal recursiva à prova de ciclo); `rulesEngine.ts` (dispara só na transição para o valor do gatilho, regra desativada nunca dispara, `create_relation` não duplica uma relação já existente, `mark_important` não mexe no status).
+Cobertura atual: validação/serialização do arquivo de campanha (inclui rejeição de hierarquia circular de grupos e relação órfã); `CampaignStore` (criar/mover/desfazer/refazer, mover grupo com descendentes, exclusão em cascata, relação sem duplicar, duplicar preservando agrupamento, troca de view, **regra semeada dispara sozinha ao mudar o status observado e não dispara de novo enquanto o status não muda de novo**); `CanvasEngine` (fitAll seguro contra viewport 0×0, resize preservando câmera, arrastar, redimensionar, seleção múltipla, criar relação pela alça, clicar em filho de grupo arrasta o grupo, Alt+arrastar duplica, zoom no cursor, pan, `Esc` cancela); `repository` com IndexedDB real (diff granular não reescreve tudo, backup e restauração, cascata de relações órfãs); filtro de views; leitores de campos por tipo (NPC/Quest/Sessão/Evento/Regra/Assentamento/Projeto/Economia/Recurso/estatísticas de relação — sempre caem no padrão em vez de quebrar com dado antigo ou malformado, incluindo prosperidade/estabilidade sempre entre 0–100 e progresso/estoque-crítico sempre derivados, nunca armazenados); `graph.ts` (busca em largura com limite de profundidade, contagem de grau, pistas soltas, cadeia causal recursiva à prova de ciclo); `rulesEngine.ts` (dispara só na transição para o valor do gatilho, regra desativada nunca dispara, `create_relation` não duplica uma relação já existente, `mark_important` não mexe no status).
 
-Validação visual (Playwright, script avulso executado manualmente — não faz parte da suíte permanente): Fase 2 — abrir NPC → editar traços e adicionar conhecimento; abrir quest → editar objetivo/status; abrir sessão → finalizar e conferir o selo; abrir Timeline. Fase 3 — abrir Conhecimento → escolher um segredo → conferir conexões; abrir Mistério → explorar a partir de um elemento; abrir Causalidade → conferir a árvore causal; abrir Regras → conferir a regra semeada; **mudar o status de "A Dungeon" para "Instável" ao vivo no Canvas e confirmar que "O Exercício Perigoso" muda sozinho para "Suspensa"**, sem nenhum clique manual nessa segunda mudança.
+Validação visual (Playwright, script avulso executado manualmente — não faz parte da suíte permanente): Fase 2 — abrir NPC → editar traços e adicionar conhecimento; abrir quest → editar objetivo/status; abrir sessão → finalizar e conferir o selo; abrir Timeline. Fase 3 — abrir Conhecimento → escolher um segredo → conferir conexões; abrir Mistério → explorar a partir de um elemento; abrir Causalidade → conferir a árvore causal; abrir Regras → conferir a regra semeada; **mudar o status de "A Dungeon" para "Instável" ao vivo no Canvas e confirmar que "O Exercício Perigoso" muda sozinho para "Suspensa"**, sem nenhum clique manual nessa segunda mudança. Fase 4 — abrir a cidade "Vilarejo de Ashgrove" → editar necessidades; abrir o projeto "Restaurar a Ala Leste" → marcar uma etapa e conferir a barra de progresso recalculada; abrir o item "Anel do Vínculo" e o recurso "Rações da Academia"; abrir os painéis "Progresso do mundo" e "Economia & recursos" e conferir os dados agregados.
 
 ## Limitações desta entrega
 

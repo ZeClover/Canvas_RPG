@@ -32,4 +32,5 @@ export const Icons = {
   gear: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="3.3" /><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M17.8 6.2l-1.6 1.6M7.8 16.2l-1.6 1.6M17.8 17.8l-1.6-1.6M7.8 7.8 6.2 6.2" /></IconBase>,
   tools: (props: IconProps) => <IconBase {...props}><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.7 2.7-2-2 2.7-2.7Z" /></IconBase>,
   chevronDown: (props: IconProps) => <IconBase {...props}><path d="m6 9 6 6 6-6" /></IconBase>,
+  coin: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M9.5 15.5c.5.7 1.4 1 2.5 1 1.7 0 3-.8 3-2s-1.3-1.8-3-2-3-.8-3-2 1.3-2 3-2c1.1 0 2 .3 2.5 1" /></IconBase>,
 };

@@ -8,13 +8,16 @@ import { CommandPalette } from "./components/CommandPalette";
 import { EntityInspector } from "./components/EntityInspector";
 import { Minimap } from "./components/Minimap";
 import { CausalityPanel } from "./components/panels/CausalityPanel";
+import { EconomyResourcesPanel } from "./components/panels/EconomyResourcesPanel";
 import { KnowledgeEnginePanel } from "./components/panels/KnowledgeEnginePanel";
 import { MysteryBoardPanel } from "./components/panels/MysteryBoardPanel";
 import { RulesEnginePanel } from "./components/panels/RulesEnginePanel";
+import { SettlementsPanel } from "./components/panels/SettlementsPanel";
+import { Icons } from "./components/Icons";
 import { QuickEditor } from "./components/QuickEditor";
 import { RelationInspector } from "./components/RelationInspector";
 import { TimelinePanel } from "./components/TimelinePanel";
-import { Topbar } from "./components/Topbar";
+import { Topbar, type ToolMenuItem } from "./components/Topbar";
 import {
   createCampaign,
   exportCampaignFile,
@@ -142,6 +145,8 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [mysteryOpen, setMysteryOpen] = useState(false);
   const [causalityOpen, setCausalityOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [settlementsOpen, setSettlementsOpen] = useState(false);
+  const [economyOpen, setEconomyOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
 
@@ -224,6 +229,16 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const saveLabel = state.saving ? "Salvando…" : state.dirty ? "Alterações locais" : state.lastSavedAt ? "Salvo agora" : "Salvo localmente";
   const editEntity = editing ? state.entities.find((entity) => entity.id === editing.id) : null;
 
+  const tools: ToolMenuItem[] = [
+    { key: "timeline", label: "Timeline", icon: Icons.clock, onClick: () => setTimelineOpen(true) },
+    { key: "knowledge", label: "Conhecimento", icon: Icons.book, onClick: () => setKnowledgeOpen(true) },
+    { key: "mystery", label: "Mistério", icon: Icons.web, onClick: () => setMysteryOpen(true) },
+    { key: "causality", label: "Causalidade", icon: Icons.branch, onClick: () => setCausalityOpen(true) },
+    { key: "rules", label: "Regras", icon: Icons.gear, onClick: () => setRulesOpen(true) },
+    { key: "settlements", label: "Progresso do mundo", icon: Icons.world, onClick: () => setSettlementsOpen(true) },
+    { key: "economy", label: "Economia & recursos", icon: Icons.coin, onClick: () => setEconomyOpen(true) },
+  ];
+
   return (
     <div className="workspace-screen">
       <Topbar
@@ -232,17 +247,13 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
         zoom={camera.scale}
         views={state.views}
         activeViewId={state.activeViewId}
+        tools={tools}
         onSetView={(id) => store.setActiveView(id)}
         onBack={onBack}
         onSearch={() => setSearchOpen(true)}
         onFitAll={() => canvasRef.current?.fitAll()}
         onSave={() => void store.saveNow()}
         onExport={() => void exportCurrentCampaign()}
-        onOpenTimeline={() => setTimelineOpen(true)}
-        onOpenKnowledge={() => setKnowledgeOpen(true)}
-        onOpenMystery={() => setMysteryOpen(true)}
-        onOpenCausality={() => setCausalityOpen(true)}
-        onOpenRules={() => setRulesOpen(true)}
       />
       <main className="workspace-main">
         <Suspense fallback={<div className="canvas-loading"><span className="loading-orbit" />Preparando o mapa…</div>}>
@@ -360,6 +371,20 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
             store.updateEntity(id, { fields: { ...rule.fields, enabled } });
           }}
           onCreateRule={() => { createAtCenter("rule"); setRulesOpen(false); }}
+        />
+      )}
+      {settlementsOpen && (
+        <SettlementsPanel
+          entities={state.entities}
+          onClose={() => setSettlementsOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {economyOpen && (
+        <EconomyResourcesPanel
+          entities={state.entities}
+          onClose={() => setEconomyOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
         />
       )}
     </div>

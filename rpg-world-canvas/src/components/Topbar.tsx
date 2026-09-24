@@ -1,7 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FC, type SVGProps } from "react";
 import type { Campaign, View } from "../domain/types";
 import { APP_VERSION } from "../version";
 import { Icons } from "./Icons";
+
+export interface ToolMenuItem {
+  key: string;
+  label: string;
+  icon: FC<SVGProps<SVGSVGElement>>;
+  onClick: () => void;
+}
 
 interface TopbarProps {
   campaign: Campaign;
@@ -9,30 +16,21 @@ interface TopbarProps {
   zoom: number;
   views: View[];
   activeViewId: string;
+  tools: ToolMenuItem[];
   onSetView: (id: string) => void;
   onBack: () => void;
   onSearch: () => void;
   onFitAll: () => void;
   onSave: () => void;
   onExport: () => void;
-  onOpenTimeline: () => void;
-  onOpenKnowledge: () => void;
-  onOpenMystery: () => void;
-  onOpenCausality: () => void;
-  onOpenRules: () => void;
 }
 
-/** Every global read-only tool (Timeline, Knowledge, Mystery, Causality,
- * Rules...) lives behind one "Ferramentas" button instead of its own
- * topbar slot — each phase adds more of these, and a flat row of buttons
- * would eventually overflow the topbar at normal window widths. */
-function ToolsMenu({ onOpenTimeline, onOpenKnowledge, onOpenMystery, onOpenCausality, onOpenRules }: {
-  onOpenTimeline: () => void;
-  onOpenKnowledge: () => void;
-  onOpenMystery: () => void;
-  onOpenCausality: () => void;
-  onOpenRules: () => void;
-}) {
+/** Every global read-only/automation tool (Timeline, Knowledge, Mystery,
+ * Causality, Rules, Settlements, Economy...) lives behind one
+ * "Ferramentas" button instead of its own topbar slot — each phase adds
+ * more of these, and a flat row of buttons would eventually overflow the
+ * topbar at normal window widths. */
+function ToolsMenu({ items }: { items: ToolMenuItem[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -44,14 +42,6 @@ function ToolsMenu({ onOpenTimeline, onOpenKnowledge, onOpenMystery, onOpenCausa
     return () => window.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const items = [
-    { label: "Timeline", icon: Icons.clock, onClick: onOpenTimeline },
-    { label: "Conhecimento", icon: Icons.book, onClick: onOpenKnowledge },
-    { label: "Mistério", icon: Icons.web, onClick: onOpenMystery },
-    { label: "Causalidade", icon: Icons.branch, onClick: onOpenCausality },
-    { label: "Regras", icon: Icons.gear, onClick: onOpenRules },
-  ];
-
   return (
     <div className="tools-menu-wrap" ref={ref}>
       <button type="button" className="ghost-button" onClick={() => setOpen((value) => !value)}>
@@ -59,8 +49,8 @@ function ToolsMenu({ onOpenTimeline, onOpenKnowledge, onOpenMystery, onOpenCausa
       </button>
       {open && (
         <div className="tools-menu">
-          {items.map(({ label, icon: Icon, onClick }) => (
-            <button type="button" key={label} onClick={() => { onClick(); setOpen(false); }}>
+          {items.map(({ key, label, icon: Icon, onClick }) => (
+            <button type="button" key={key} onClick={() => { onClick(); setOpen(false); }}>
               <Icon /> {label}
             </button>
           ))}
@@ -70,10 +60,7 @@ function ToolsMenu({ onOpenTimeline, onOpenKnowledge, onOpenMystery, onOpenCausa
   );
 }
 
-export function Topbar({
-  campaign, saveLabel, zoom, views, activeViewId, onSetView, onBack, onSearch, onFitAll, onSave, onExport,
-  onOpenTimeline, onOpenKnowledge, onOpenMystery, onOpenCausality, onOpenRules,
-}: TopbarProps) {
+export function Topbar({ campaign, saveLabel, zoom, views, activeViewId, tools, onSetView, onBack, onSearch, onFitAll, onSave, onExport }: TopbarProps) {
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -94,7 +81,7 @@ export function Topbar({
       <div className="topbar-actions">
         <span className="zoom-label">{Math.round(zoom * 100)}%</span>
         <button className="ghost-button" onClick={onFitAll}><Icons.frame /> Ver tudo</button>
-        <ToolsMenu onOpenTimeline={onOpenTimeline} onOpenKnowledge={onOpenKnowledge} onOpenMystery={onOpenMystery} onOpenCausality={onOpenCausality} onOpenRules={onOpenRules} />
+        <ToolsMenu items={tools} />
         <button className="ghost-button" onClick={onExport}><Icons.download /><span>Exportar</span></button>
         <button className="save-state" onClick={onSave}>{saveLabel}</button>
       </div>

@@ -1,38 +1,14 @@
 import { useState } from "react";
 import { createId } from "../../domain/id";
-import { QUEST_STATUSES, readQuestFields, type QuestFields, type QuestObjective } from "../../domain/questFields";
+import { QUEST_STATUSES, readQuestFields, type QuestFields } from "../../domain/questFields";
 import { Icons } from "../Icons";
+import { ObjectiveList } from "./ObjectiveList";
 
 interface QuestSectionProps {
   status: string | null;
   fields: Record<string, unknown>;
   onUpdateStatus: (status: string) => void;
   onUpdate: (fields: Record<string, unknown>) => void;
-}
-
-function ObjectiveList({ title, objectives, onChange }: { title: string; objectives: QuestObjective[]; onChange: (next: QuestObjective[]) => void }) {
-  const [text, setText] = useState("");
-  return (
-    <div className="objective-block">
-      <span className="objective-title">{title}</span>
-      <ul className="mini-list">
-        {objectives.map((objective) => (
-          <li key={objective.id}>
-            <input type="checkbox" checked={objective.done} onChange={(e) => onChange(objectives.map((o) => (o.id === objective.id ? { ...o, done: e.target.checked } : o)))} />
-            <span className={objective.done ? "mini-list-text is-done" : "mini-list-text"}>{objective.text}</span>
-            <button type="button" className="icon-button" aria-label="Remover" onClick={() => onChange(objectives.filter((o) => o.id !== objective.id))}><Icons.close /></button>
-          </li>
-        ))}
-        {!objectives.length && <li className="mini-list-empty">Nenhum ainda.</li>}
-      </ul>
-      <div className="inline-form">
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Novo objetivo…" onKeyDown={(e) => {
-          if (e.key === "Enter" && text.trim()) { onChange([...objectives, { id: createId("objective"), text: text.trim(), done: false }]); setText(""); }
-        }} />
-        <button type="button" disabled={!text.trim()} onClick={() => { onChange([...objectives, { id: createId("objective"), text: text.trim(), done: false }]); setText(""); }}><Icons.plus /></button>
-      </div>
-    </div>
-  );
 }
 
 export function QuestSection({ status, fields, onUpdateStatus, onUpdate }: QuestSectionProps) {

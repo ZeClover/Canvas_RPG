@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createId } from "../../domain/id";
 import { KNOWLEDGE_STATE_LABEL, readNpcFields, type KnowledgeState, type NpcFields } from "../../domain/npcFields";
 import { Icons } from "../Icons";
+import { ListEditor } from "./ListEditor";
 
 interface NpcSectionProps {
   fields: Record<string, unknown>;
@@ -18,21 +19,6 @@ const PERSONALITY_KEYS: Array<{ key: keyof NpcFields; label: string; placeholder
   { key: "limits", label: "Limites", placeholder: "nunca mente para crianças" },
   { key: "habits", label: "Hábitos", placeholder: "gira um anel quando nervoso" },
 ];
-
-function ListEditor({ label, value, placeholder, onChange }: { label: string; value: string[]; placeholder: string; onChange: (next: string[]) => void }) {
-  const [text, setText] = useState(value.join(", "));
-  return (
-    <label className="compact-field">
-      {label}
-      <input
-        value={text}
-        placeholder={placeholder}
-        onChange={(event) => setText(event.target.value)}
-        onBlur={() => onChange(text.split(",").map((item) => item.trim()).filter(Boolean))}
-      />
-    </label>
-  );
-}
 
 export function NpcSection({ fields, onUpdate }: NpcSectionProps) {
   const npc = readNpcFields(fields);
