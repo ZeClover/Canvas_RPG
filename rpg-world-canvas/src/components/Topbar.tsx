@@ -14,9 +14,10 @@ interface TopbarProps {
   onFitAll: () => void;
   onSave: () => void;
   onExport: () => void;
+  onOpenTimeline: () => void;
 }
 
-export function Topbar({ campaign, saveLabel, zoom, views, activeViewId, onSetView, onBack, onSearch, onFitAll, onSave, onExport }: TopbarProps) {
+export function Topbar({ campaign, saveLabel, zoom, views, activeViewId, onSetView, onBack, onSearch, onFitAll, onSave, onExport, onOpenTimeline }: TopbarProps) {
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -37,6 +38,7 @@ export function Topbar({ campaign, saveLabel, zoom, views, activeViewId, onSetVi
       <div className="topbar-actions">
         <span className="zoom-label">{Math.round(zoom * 100)}%</span>
         <button className="ghost-button" onClick={onFitAll}><Icons.frame /> Ver tudo</button>
+        <button className="ghost-button" onClick={onOpenTimeline}><Icons.clock /><span>Timeline</span></button>
         <button className="ghost-button" onClick={onExport}><Icons.download /><span>Exportar</span></button>
         <button className="save-state" onClick={onSave}>{saveLabel}</button>
       </div>

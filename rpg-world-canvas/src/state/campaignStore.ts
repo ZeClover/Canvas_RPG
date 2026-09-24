@@ -380,6 +380,7 @@ export class CampaignStore {
       sessionId: null,
       importance: null,
       state: null,
+      fields: {},
       history: [],
       createdAt: now,
       updatedAt: now,

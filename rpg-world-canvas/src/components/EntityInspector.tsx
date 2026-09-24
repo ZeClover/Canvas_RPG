@@ -6,6 +6,9 @@ import type { Entity, EntityKind, Relation, RelationType, Visibility } from "../
 import { RELATION_TYPES } from "../domain/types";
 import { ColorPicker } from "./ColorPicker";
 import { Icons } from "./Icons";
+import { NpcSection } from "./sections/NpcSection";
+import { QuestSection } from "./sections/QuestSection";
+import { SessionSection } from "./sections/SessionSection";
 
 interface EntityInspectorProps {
   entity: Entity;
@@ -80,13 +83,15 @@ export function EntityInspector({ entity, allEntities, relations, onUpdate, onCl
         <textarea value={summary} onChange={(event) => setSummary(event.target.value)} onBlur={() => summary !== entity.summary && onUpdate({ summary })} placeholder="Detalhes, contexto, lembretes…" />
       </label>
 
+      {!isGroup && entity.kind !== "quest" && entity.kind !== "side_quest" && (
+        <label>
+          Status
+          <input value={status} onChange={(event) => setStatus(event.target.value)} onBlur={() => onUpdate({ status: status.trim() || null })} placeholder="Ex.: Ativa, Concluída, Vivo…" />
+        </label>
+      )}
+
       {!isGroup && (
         <>
-          <label>
-            Status
-            <input value={status} onChange={(event) => setStatus(event.target.value)} onBlur={() => onUpdate({ status: status.trim() || null })} placeholder="Ex.: Ativa, Concluída, Vivo…" />
-          </label>
-
           <label>
             Etiquetas
             <input
@@ -147,6 +152,12 @@ export function EntityInspector({ entity, allEntities, relations, onUpdate, onCl
           </label>
         </>
       )}
+
+      {entity.kind === "npc" && <NpcSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {(entity.kind === "quest" || entity.kind === "side_quest") && (
+        <QuestSection status={entity.status} fields={entity.fields} onUpdateStatus={(value) => onUpdate({ status: value })} onUpdate={(fields) => onUpdate({ fields })} />
+      )}
+      {entity.kind === "session" && <SessionSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
 
       <div className="size-fields">
         <label>Largura<input value={Math.round(entity.width)} inputMode="numeric" onChange={(event) => onUpdate({ width: Math.max(80, Number(event.target.value) || entity.width) })} /></label>

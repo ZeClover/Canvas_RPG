@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { kindConfig } from "../domain/entityKindRegistry";
 import { relationConfig } from "../domain/relationTypeRegistry";
+import { RELATION_STAT_LABEL, readRelationStats, type RelationStats } from "../domain/relationStats";
 import type { Entity, Relation, RelationType } from "../domain/types";
 import { RELATION_TYPES } from "../domain/types";
 import { Icons } from "./Icons";
@@ -45,6 +46,12 @@ export function RelationInspector({ relation, fromEntity, toEntity, onUpdate, on
           <option value="high">Alta</option>
         </select>
       </label>
+      {fromEntity?.kind === "npc" && toEntity?.kind === "npc" && (
+        <>
+          <span className="eyebrow">ATRIBUTOS (OPCIONAIS)</span>
+          <RelationStatsEditor stats={readRelationStats(relation.fields)} onChange={(fields) => onUpdate({ fields })} />
+        </>
+      )}
       {fromEntity && toEntity && (
         <div className="inspector-tip">
           {kindConfig(fromEntity.kind).icon} {fromEntity.title} → {kindConfig(toEntity.kind).icon} {toEntity.title}
@@ -55,5 +62,26 @@ export function RelationInspector({ relation, fromEntity, toEntity, onUpdate, on
         <button className="danger-button" onClick={onDelete}><Icons.trash /> Excluir</button>
       </div>
     </aside>
+  );
+}
+
+function RelationStatsEditor({ stats, onChange }: { stats: RelationStats; onChange: (fields: Record<string, unknown>) => void }) {
+  const keys = Object.keys(RELATION_STAT_LABEL) as Array<keyof RelationStats>;
+  return (
+    <div className="compact-grid">
+      {keys.map((key) => (
+        <label className="compact-field" key={key}>
+          {RELATION_STAT_LABEL[key]}
+          <input
+            type="number"
+            min={-10}
+            max={10}
+            value={stats[key] ?? ""}
+            placeholder="—"
+            onChange={(event) => onChange({ ...stats, [key]: event.target.value === "" ? null : Number(event.target.value) })}
+          />
+        </label>
+      ))}
+    </div>
   );
 }

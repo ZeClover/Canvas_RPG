@@ -25,4 +25,5 @@ export const Icons = {
   spark: (props: IconProps) => <IconBase {...props}><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z" /></IconBase>,
   eye: (props: IconProps) => <IconBase {...props}><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></IconBase>,
   world: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9Z" /></IconBase>,
+  clock: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></IconBase>,
 };

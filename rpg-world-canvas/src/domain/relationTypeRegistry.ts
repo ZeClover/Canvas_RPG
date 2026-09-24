@@ -31,6 +31,8 @@ export const RELATION_TYPE_CONFIG: Record<RelationType, RelationTypeConfig> = {
   leads_to: { label: "leva a", color: "#fb923c", style: "solid", arrow: "triangle" },
   blocks: { label: "bloqueia", color: "#ef4444", style: "dashed", arrow: "diamond" },
   requires: { label: "requer", color: "#eab308", style: "dashed", arrow: "diamond" },
+  unlocks_on_success: { label: "desbloqueia se concluir", color: "#34d399", style: "solid", arrow: "diamond" },
+  unlocks_on_fail: { label: "desbloqueia se falhar", color: "#ef4444", style: "dashed", arrow: "diamond" },
   custom: { label: "personalizada", color: "#8290ad", style: "solid", arrow: "triangle" },
 };
 

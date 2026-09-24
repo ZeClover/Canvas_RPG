@@ -1,4 +1,4 @@
-# RPG World Canvas — v0.1.0 (Fase 1)
+# RPG World Canvas — v0.2.0 (Fase 2)
 
 Um motor visual de campanhas de RPG de mesa: NPCs, quests, locais, facções, segredos, sessões e tudo mais vivem como o **mesmo dado**, visto de formas diferentes (Canvas, Views, busca). Não é um VTT, não é uma wiki, não é um gerenciador de projeto — é uma memória visual e interativa do universo.
 
@@ -61,11 +61,18 @@ Exclusão em cascata: apagar um elemento remove as relações que o tocam; apaga
 - exportar/importar campanha como arquivo único `.rpgworld`, com importação não destrutiva (recria IDs se já existe uma campanha igual);
 - undo/redo.
 
+## O que já funciona (Fase 2, conforme pedido)
+
+- **NPC Brain**: painel dedicado no inspetor de NPC — identidade (idade, raça, profissão, organização, localização atual), personalidade (traços, comportamentos, valores, medos, desejos, objetivos, limites, hábitos — cada campo editável como lista curta), conhecimento (o que o NPC sabe, com estado `sabe`/`suspeita`/`nega`/`esconde`, badges coloridos) e possibilidades futuras (ideias soltas para o NPC evoluir, sem comprometer nada);
+- **Quest Studio**: painel dedicado para quest/side quest — status (`Não iniciada`/`Ativa`/`Concluída`/`Falhou`/`Abandonada`), motivação, objetivo principal, objetivos secundários e ocultos (checáveis, adicionáveis em linha), condições de início, prazo, relógio de tensão (rótulo + progresso atual/máximo), recompensas, consequências e resoluções — mais dois tipos de relação novos (`unlocks_on_success`/`unlocks_on_fail`) para ramificar quests visualmente no Canvas (losango verde = desbloqueia se concluir, losango vermelho tracejado = desbloqueia se falhar);
+- **Session System**: painel dedicado para sessão — número, data, duração, desenvolvimento, notas, consequências, recursos usados, transcrição colável, e a ação **"Finalizar sessão"** (marca `finalizedAt`, mostra selo de sessão encerrada, trava os campos);
+- **Timeline**: painel global (`Timeline` na topbar) que agrega eventos e sessões, ordenados por data, com filtro de texto e checkboxes para mostrar/esconder cada tipo — clicar num item foca o elemento correspondente no Canvas;
+- estatísticas numéricas opcionais (confiança/respeito/medo/dívida/conflito) em relações NPC↔NPC, editáveis direto no inspetor de relação, nunca obrigatórias.
+
 ## O que ainda não existe (fases seguintes, por design)
 
 Seguindo exatamente a ordem de fases pedida — não implementado de forma superficial, simplesmente ainda não começado:
 
-- **Fase 2** — NPC Brain (personalidade/história/conhecimento/relações com números opcionais/possibilidades futuras), Quest Studio (objetivos ocultos, condições, ramificações visuais, side quests), Session System completo, Timeline.
 - **Fase 3** — Knowledge Engine, Mystery/Conspiracy Board com análise de grafo, Butterfly Effect/Causalidade, Rules Engine visual.
 - **Fase 4** — World Progression/Settlement Engine, Project Engine, Economy Engine, Resource Engine.
 - **Fase 5** — Scene Composer, Foreshadowing Engine, Ecology Engine, Rumor Engine com templates.
@@ -84,14 +91,16 @@ npm run dev
 ## Testes
 
 ```bash
-npm test           # 37 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
+npm test           # 45 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
 npm run build       # TypeScript estrito + build de produção (Vite)
 npx playwright install chromium   # uma vez
 npm run test:e2e    # teste visual/end-to-end (Playwright): abre a campanha de exemplo, arrasta um NPC real,
                      # tira screenshot antes/depois, recarrega e confirma que a posição persistiu
 ```
 
-Cobertura atual: validação/serialização do arquivo de campanha (inclui rejeição de hierarquia circular de grupos e relação órfã); `CampaignStore` (criar/mover/desfazer/refazer, mover grupo com descendentes, exclusão em cascata, relação sem duplicar, duplicar preservando agrupamento, troca de view); `CanvasEngine` (fitAll seguro contra viewport 0×0, resize preservando câmera, arrastar, redimensionar, seleção múltipla, criar relação pela alça, clicar em filho de grupo arrasta o grupo, Alt+arrastar duplica, zoom no cursor, pan, `Esc` cancela); `repository` com IndexedDB real (diff granular não reescreve tudo, backup e restauração, cascata de relações órfãs); filtro de views.
+Cobertura atual: validação/serialização do arquivo de campanha (inclui rejeição de hierarquia circular de grupos e relação órfã); `CampaignStore` (criar/mover/desfazer/refazer, mover grupo com descendentes, exclusão em cascata, relação sem duplicar, duplicar preservando agrupamento, troca de view); `CanvasEngine` (fitAll seguro contra viewport 0×0, resize preservando câmera, arrastar, redimensionar, seleção múltipla, criar relação pela alça, clicar em filho de grupo arrasta o grupo, Alt+arrastar duplica, zoom no cursor, pan, `Esc` cancela); `repository` com IndexedDB real (diff granular não reescreve tudo, backup e restauração, cascata de relações órfãs); filtro de views; leitores de campos por tipo (NPC/Quest/Sessão/Evento/estatísticas de relação — sempre caem no padrão em vez de quebrar com dado antigo ou malformado).
+
+Validação visual (Playwright, script avulso executado manualmente — não faz parte da suíte permanente): abrir NPC → editar traços e adicionar conhecimento; abrir quest → editar objetivo/status; abrir sessão → finalizar e conferir o selo; abrir Timeline e conferir a lista agregada.
 
 ## Limitações desta entrega
 

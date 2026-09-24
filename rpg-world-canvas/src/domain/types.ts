@@ -53,13 +53,14 @@ export type RelationType =
   | "member_of" | "offers" | "involves" | "happens_at" | "reveals"
   | "caused" | "points_to" | "knows_about" | "originated_from"
   | "improves" | "belongs_to" | "leads_to" | "blocks" | "requires"
+  | "unlocks_on_success" | "unlocks_on_fail"
   | "custom";
 
 export const RELATION_TYPES: RelationType[] = [
   "knows", "hates", "loves", "trusts", "fears", "works_for", "member_of",
   "offers", "involves", "happens_at", "reveals", "caused", "points_to",
   "knows_about", "originated_from", "improves", "belongs_to", "leads_to",
-  "blocks", "requires", "custom",
+  "blocks", "requires", "unlocks_on_success", "unlocks_on_fail", "custom",
 ];
 
 export interface Entity {
@@ -107,6 +108,10 @@ export interface Relation {
   sessionId: string | null;
   importance: "low" | "medium" | "high" | null;
   state: string | null;
+  /** Optional numeric stats (trust/respect/fear/debt/conflict...) mostly
+   * meaningful for NPC↔NPC relations. Never required — most relations
+   * (e.g. "quest happens_at location") never touch this. */
+  fields: Record<string, unknown>;
   history: RelationHistoryEntry[];
   createdAt: number;
   updatedAt: number;

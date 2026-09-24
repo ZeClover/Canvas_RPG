@@ -156,6 +156,7 @@ function parseRelation(value: unknown, campaignId: string): Relation {
     sessionId: nullableString(source.sessionId, "Sessão da relação", 200),
     importance: importanceValue as Relation["importance"],
     state: nullableString(source.state, "Estado da relação", 200),
+    fields: fieldsBag(source.fields, "Campos da relação"),
     history: parseRelationHistory(source.history),
     createdAt: number(source.createdAt, "Criação da relação", 0, Number.MAX_SAFE_INTEGER),
     updatedAt: number(source.updatedAt, "Atualização da relação", 0, Number.MAX_SAFE_INTEGER),

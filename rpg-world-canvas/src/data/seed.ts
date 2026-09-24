@@ -138,6 +138,7 @@ export function createDemoCampaign(): CampaignData {
     sessionId: null,
     importance: null,
     state: null,
+    fields: {},
     history: [],
     createdAt: now,
     updatedAt: now,

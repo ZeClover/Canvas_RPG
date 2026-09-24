@@ -9,6 +9,7 @@ import { EntityInspector } from "./components/EntityInspector";
 import { Minimap } from "./components/Minimap";
 import { QuickEditor } from "./components/QuickEditor";
 import { RelationInspector } from "./components/RelationInspector";
+import { TimelinePanel } from "./components/TimelinePanel";
 import { Topbar } from "./components/Topbar";
 import {
   createCampaign,
@@ -132,6 +133,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const canvasRef = useRef<CanvasSurfaceHandle>(null);
   const [camera, setCamera] = useState(initialCamera);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
 
@@ -228,6 +230,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
         onFitAll={() => canvasRef.current?.fitAll()}
         onSave={() => void store.saveNow()}
         onExport={() => void exportCurrentCampaign()}
+        onOpenTimeline={() => setTimelineOpen(true)}
       />
       <main className="workspace-main">
         <Suspense fallback={<div className="canvas-loading"><span className="loading-orbit" />Preparando o mapa…</div>}>
@@ -301,6 +304,13 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
             canvasRef.current?.focusEntity(entity.id);
             setSearchOpen(false);
           }}
+        />
+      )}
+      {timelineOpen && (
+        <TimelinePanel
+          entities={state.entities}
+          onClose={() => setTimelineOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
         />
       )}
     </div>
