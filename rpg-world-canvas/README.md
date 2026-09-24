@@ -1,4 +1,4 @@
-# RPG World Canvas — v0.2.0 (Fase 2)
+# RPG World Canvas — v0.3.0 (Fase 3)
 
 Um motor visual de campanhas de RPG de mesa: NPCs, quests, locais, facções, segredos, sessões e tudo mais vivem como o **mesmo dado**, visto de formas diferentes (Canvas, Views, busca). Não é um VTT, não é uma wiki, não é um gerenciador de projeto — é uma memória visual e interativa do universo.
 
@@ -18,11 +18,14 @@ Uma **View** nunca duplica dados — ela só guarda um filtro (`kinds`, `tags`, 
 
 ```
 src/
-  domain/     tipos, registro de tipos de card, registro de tipos de relação, câmera/espaço, índice espacial, orçamento de renderização, filtro de views
+  domain/     tipos, registro de tipos de card/relação, câmera/espaço, índice espacial, orçamento de renderização,
+              filtro de views, leitores de campos por tipo (NPC/Quest/Sessão/Evento/Regra), graph.ts (BFS/grau/
+              cadeia causal — Mystery Board e Causalidade), rulesEngine.ts (avaliação pura do Rules Engine)
   data/       IndexedDB (banco 100% local), arquivo de campanha (.rpgworld) com validação estrita, seed/demo
-  state/      CampaignStore — única fonte de verdade reativa (undo/redo, autosave granular)
+  state/      CampaignStore — única fonte de verdade reativa (undo/redo, autosave granular, avalia as regras)
   canvas/     CanvasEngine — um único <canvas> visível e interativo (ver abaixo)
-  components/ Topbar, toolbar, inspetor genérico, busca (Ctrl+K), minimapa, tela de campanhas
+  components/ Topbar (com o menu Ferramentas), toolbar, inspetor genérico + seções por tipo, busca (Ctrl+K),
+              minimapa, tela de campanhas, painéis globais (Timeline/Conhecimento/Mistério/Causalidade/Regras)
 ```
 
 ## O Canvas é a interface principal — não decoração
@@ -51,7 +54,7 @@ Exclusão em cascata: apagar um elemento remove as relações que o tocam; apaga
 
 - criação de campanhas (nível 1: "Visão Geral dos RPGs"), com projeto de exemplo semeado automaticamente no primeiro uso;
 - Canvas funcional com todas as interações acima;
-- 26 tipos de card (25 tipos de conteúdo + grupo), cada um com ícone, cor padrão e tamanho padrão configuráveis;
+- 27 tipos de card (26 tipos de conteúdo + grupo), cada um com ícone, cor padrão e tamanho padrão configuráveis;
 - 21 tipos de relação, cada um com cor, estilo de traço (sólido/tracejado/pontilhado) e estilo de seta (triângulo/losango/círculo) próprios — dá para diferenciar o tipo de conexão só de olhar, sem clicar;
 - grupos visuais aninhados;
 - views (filtros salvos) — "Visão Geral", "NPCs", "Quests", "Facções", "Locais", "Mistérios" por padrão;
@@ -69,11 +72,19 @@ Exclusão em cascata: apagar um elemento remove as relações que o tocam; apaga
 - **Timeline**: painel global (`Timeline` na topbar) que agrega eventos e sessões, ordenados por data, com filtro de texto e checkboxes para mostrar/esconder cada tipo — clicar num item foca o elemento correspondente no Canvas;
 - estatísticas numéricas opcionais (confiança/respeito/medo/dívida/conflito) em relações NPC↔NPC, editáveis direto no inspetor de relação, nunca obrigatórias.
 
+## O que já funciona (Fase 3, conforme pedido)
+
+Todas as quatro ferramentas abaixo são **apenas leituras diferentes das mesmas `entities`/`relations`** — nenhuma tabela paralela, nenhuma IA, tudo recalculado ao vivo a partir do grafo que você já desenhou no Canvas. Ficam agrupadas atrás de um único botão **Ferramentas** na topbar (em vez de um botão por ferramenta) para não lotar a barra conforme novas fases adicionam mais:
+
+- **Knowledge Engine**: escolha um segredo/pista/rumor/conhecimento e veja tudo que está conectado a ele (quem sabe, o que revela, de onde surgiu) — é a mesma tabela `relations` que você edita no inspetor, só que lida de trás para frente;
+- **Mystery/Conspiracy Board**: "mais conectados" (ranking por grau, sem inferência — só contagem de relações), "pistas soltas" (segredos/pistas/rumores sem nenhuma conexão ainda) e um explorador de vizinhança (escolha um elemento e uma profundidade, veja tudo dentro de N passos via busca em largura);
+- **Butterfly Effect / Causalidade**: escolha uma decisão/evento/quest e veja a árvore completa — o que levou a isso e o que isso causou — seguindo as relações `causou`/`leva a`/`desbloqueia se…`, recursivo e à prova de ciclo;
+- **Rules Engine**: automação 100% determinística — "quando `<entidade>` chega ao status `<valor>`, então mude o status de `<entidade alvo>` / marque como importante / crie uma relação". Uma regra é uma `Entity` como qualquer outra (`kind: "rule"`), editada no mesmo inspetor de sempre; o `CampaignStore` avalia todas as regras a cada mudança, em passes limitados (no máximo 5) para permitir uma regra disparar outra (efeito cascata) sem nunca poder entrar em loop infinito. Cada disparo fica registrado no histórico da própria regra.
+
 ## O que ainda não existe (fases seguintes, por design)
 
 Seguindo exatamente a ordem de fases pedida — não implementado de forma superficial, simplesmente ainda não começado:
 
-- **Fase 3** — Knowledge Engine, Mystery/Conspiracy Board com análise de grafo, Butterfly Effect/Causalidade, Rules Engine visual.
 - **Fase 4** — World Progression/Settlement Engine, Project Engine, Economy Engine, Resource Engine.
 - **Fase 5** — Scene Composer, Foreshadowing Engine, Ecology Engine, Rumor Engine com templates.
 - **Fase 6** — Importação de transcrições, Campaign Health Dashboard, Player Knowledge View (o campo `visibility` em cada elemento já existe para isso, só falta a tela).
@@ -91,16 +102,16 @@ npm run dev
 ## Testes
 
 ```bash
-npm test           # 45 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
+npm test           # 62 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
 npm run build       # TypeScript estrito + build de produção (Vite)
 npx playwright install chromium   # uma vez
 npm run test:e2e    # teste visual/end-to-end (Playwright): abre a campanha de exemplo, arrasta um NPC real,
                      # tira screenshot antes/depois, recarrega e confirma que a posição persistiu
 ```
 
-Cobertura atual: validação/serialização do arquivo de campanha (inclui rejeição de hierarquia circular de grupos e relação órfã); `CampaignStore` (criar/mover/desfazer/refazer, mover grupo com descendentes, exclusão em cascata, relação sem duplicar, duplicar preservando agrupamento, troca de view); `CanvasEngine` (fitAll seguro contra viewport 0×0, resize preservando câmera, arrastar, redimensionar, seleção múltipla, criar relação pela alça, clicar em filho de grupo arrasta o grupo, Alt+arrastar duplica, zoom no cursor, pan, `Esc` cancela); `repository` com IndexedDB real (diff granular não reescreve tudo, backup e restauração, cascata de relações órfãs); filtro de views; leitores de campos por tipo (NPC/Quest/Sessão/Evento/estatísticas de relação — sempre caem no padrão em vez de quebrar com dado antigo ou malformado).
+Cobertura atual: validação/serialização do arquivo de campanha (inclui rejeição de hierarquia circular de grupos e relação órfã); `CampaignStore` (criar/mover/desfazer/refazer, mover grupo com descendentes, exclusão em cascata, relação sem duplicar, duplicar preservando agrupamento, troca de view, **regra semeada dispara sozinha ao mudar o status observado e não dispara de novo enquanto o status não muda de novo**); `CanvasEngine` (fitAll seguro contra viewport 0×0, resize preservando câmera, arrastar, redimensionar, seleção múltipla, criar relação pela alça, clicar em filho de grupo arrasta o grupo, Alt+arrastar duplica, zoom no cursor, pan, `Esc` cancela); `repository` com IndexedDB real (diff granular não reescreve tudo, backup e restauração, cascata de relações órfãs); filtro de views; leitores de campos por tipo (NPC/Quest/Sessão/Evento/Regra/estatísticas de relação — sempre caem no padrão em vez de quebrar com dado antigo ou malformado); `graph.ts` (busca em largura com limite de profundidade, contagem de grau, pistas soltas, cadeia causal recursiva à prova de ciclo); `rulesEngine.ts` (dispara só na transição para o valor do gatilho, regra desativada nunca dispara, `create_relation` não duplica uma relação já existente, `mark_important` não mexe no status).
 
-Validação visual (Playwright, script avulso executado manualmente — não faz parte da suíte permanente): abrir NPC → editar traços e adicionar conhecimento; abrir quest → editar objetivo/status; abrir sessão → finalizar e conferir o selo; abrir Timeline e conferir a lista agregada.
+Validação visual (Playwright, script avulso executado manualmente — não faz parte da suíte permanente): Fase 2 — abrir NPC → editar traços e adicionar conhecimento; abrir quest → editar objetivo/status; abrir sessão → finalizar e conferir o selo; abrir Timeline. Fase 3 — abrir Conhecimento → escolher um segredo → conferir conexões; abrir Mistério → explorar a partir de um elemento; abrir Causalidade → conferir a árvore causal; abrir Regras → conferir a regra semeada; **mudar o status de "A Dungeon" para "Instável" ao vivo no Canvas e confirmar que "O Exercício Perigoso" muda sozinho para "Suspensa"**, sem nenhum clique manual nessa segunda mudança.
 
 ## Limitações desta entrega
 

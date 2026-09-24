@@ -32,6 +32,11 @@ export type EntityKind =
   | "foreshadowing"
   | "transcript"
   | "universe"
+  // Deterministic automation (Rules Engine): "quando X vira Y, então Z" —
+  // evaluated by CampaignStore itself, never by an AI. Stored as a normal
+  // entity (fields hold the trigger/action) so it's searchable, sits on
+  // the canvas and follows the same undo/redo path as everything else.
+  | "rule"
   // Structural kind: a resizable/draggable area on the canvas that other
   // entities can belong to (via their groupId). Rendered as a bounded
   // region, not a card — everything else about it (tags, search, views,
@@ -43,7 +48,7 @@ export const ENTITY_KINDS: EntityKind[] = [
   "location", "city", "region", "faction", "creature", "item",
   "secret", "knowledge", "clue", "rumor", "decision", "possibility",
   "scene", "project", "resource", "theme", "foreshadowing",
-  "transcript", "universe", "group",
+  "transcript", "universe", "rule", "group",
 ];
 
 export type Visibility = "gm_only" | "revealed" | "partial";

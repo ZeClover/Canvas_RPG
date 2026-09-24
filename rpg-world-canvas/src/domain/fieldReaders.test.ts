@@ -3,6 +3,7 @@ import { defaultEventFields, readEventFields } from "./eventFields";
 import { defaultNpcFields, readNpcFields } from "./npcFields";
 import { defaultQuestFields, readQuestFields } from "./questFields";
 import { defaultRelationStats, readRelationStats } from "./relationStats";
+import { defaultRuleFields, readRuleFields } from "./ruleFields";
 import { defaultSessionFields, readSessionFields } from "./sessionFields";
 
 describe("leitores de campos por tipo", () => {
@@ -48,5 +49,24 @@ describe("leitores de campos por tipo", () => {
   it("relação: estatísticas ficam nulas quando ausentes, sem forçar valores", () => {
     expect(readRelationStats({})).toEqual(defaultRelationStats());
     expect(readRelationStats({ trust: 5, fear: 2 })).toMatchObject({ trust: 5, fear: 2, respect: null });
+  });
+
+  it("regra: retorna os padrões para um bag vazio", () => {
+    expect(readRuleFields({})).toEqual(defaultRuleFields());
+  });
+
+  it("regra: ignora um tipo de relação desconhecido na ação e cai no padrão", () => {
+    const fields = readRuleFields({
+      enabled: false,
+      trigger: { entityId: "e1", value: "Concluída" },
+      action: { kind: "create_relation", targetEntityId: "e2", relationType: "isso-nao-existe" },
+    });
+    expect(fields.enabled).toBe(false);
+    expect(fields.trigger).toEqual({ kind: "status_equals", entityId: "e1", value: "Concluída" });
+    expect(fields.action.relationType).toBe(defaultRuleFields().action.relationType);
+  });
+
+  it("regra: um log malformado nunca quebra, cai em lista vazia", () => {
+    expect(readRuleFields({ log: "não é array" }).log).toEqual([]);
   });
 });

@@ -112,6 +112,11 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .ghost-button:hover { color: #fff; background: rgba(255,255,255,.065); }
 .zoom-label { min-width: 38px; color: #657088; font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; text-align: right; }
 .save-state { padding: 0 4px; color: #69758c; background: none; border: 0; cursor: pointer; font-size: 10px; white-space: nowrap; }
+.tools-menu-wrap { position: relative; }
+.tools-menu-wrap > .ghost-button svg:last-child { width: 13px; height: 13px; margin-left: -2px; opacity: .6; }
+.tools-menu { position: absolute; z-index: 30; right: 0; top: calc(100% + 8px); display: grid; min-width: 190px; overflow: hidden; padding: 5px; background: rgba(17,21,32,.98); border: 1px solid rgba(167,178,207,.2); border-radius: 11px; box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+.tools-menu button { display: flex; align-items: center; gap: 9px; width: 100%; height: 36px; padding: 0 10px; color: #c4ccdc; text-align: left; background: transparent; border: 0; border-radius: 7px; cursor: pointer; font-size: 11px; font-weight: 700; }
+.tools-menu button:hover { color: #fff; background: rgba(255,255,255,.07); }
 .workspace-main { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(circle at 50% 45%, rgba(30,37,55,.32), transparent 48%), #090c13; }
 .canvas-surface { position: absolute; inset: 0; width: 100%; height: 100%; }
 .canvas-view { position: absolute; inset: 0; z-index: 0; display: block; width: 100%; height: 100%; cursor: default; touch-action: none; }
@@ -267,3 +272,61 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .timeline-icon { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; font-size: 15px; background: rgba(167,139,250,.1); border-radius: 9px; }
 .timeline-item strong { display: block; font-size: 13px; }
 .timeline-item small { display: block; overflow: hidden; margin-top: 3px; color: #8994aa; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Shared dialog panel for global tools (Timeline, Conhecimento, Mistério, Causalidade, Regras) */
+.tool-backdrop { align-items: start; padding-top: 8vh; }
+.tool-panel { position: relative; width: min(780px, 100%); max-height: min(760px, calc(100vh - 16vh)); overflow: auto; padding: 26px; background: #121722; border: 1px solid rgba(167,139,250,.22); border-radius: 20px; box-shadow: 0 28px 90px rgba(0,0,0,.55); }
+.tool-panel-heading { display: flex; align-items: start; justify-content: space-between; margin-bottom: 18px; }
+.tool-panel-heading h2 { margin: 6px 0 0; font-size: 22px; }
+.tool-panel-empty { padding: 26px; color: #657088; text-align: center; font-size: 11px; background: transparent; border: 0; }
+.tool-panel-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 20px; }
+.tool-panel-section { margin-bottom: 20px; }
+.tool-panel-section:last-child { margin-bottom: 0; }
+.tool-panel-section .eyebrow { display: block; margin-bottom: 9px; }
+
+/* Generic clickable entity row, reused across the Knowledge/Mystery/Causality/Rules panels */
+.entity-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; max-height: 320px; overflow: auto; }
+.entity-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; text-align: left; background: #0c1019; border: 1px solid #242c3d; border-radius: 10px; cursor: pointer; }
+.entity-row:hover { border-color: #3a4560; }
+.entity-row.is-active { border-color: var(--violet); background: rgba(167,139,250,.08); }
+.entity-row-icon { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; font-size: 14px; background: rgba(167,139,250,.1); border-radius: 8px; }
+.entity-row-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.entity-row-title { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.entity-row-meta { overflow: hidden; color: #8994aa; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
+
+/* Knowledge Engine */
+.knowledge-layout { display: grid; grid-template-columns: 230px 1fr; gap: 20px; }
+.knowledge-layout .entity-list { max-height: 480px; }
+.knowledge-detail h3 { margin: 0 0 6px; font-size: 16px; }
+.knowledge-summary { margin: 0 0 16px; color: #a9b2c7; font-size: 12px; line-height: 1.5; }
+.knowledge-detail .entity-list { max-height: 380px; }
+@media (max-width: 760px) { .knowledge-layout, .tool-panel-columns { grid-template-columns: 1fr; } }
+
+/* Mystery Board / Causality: focus picker */
+.graph-focus-form { display: flex; gap: 10px; align-items: end; margin-bottom: 12px; }
+.graph-focus-form select { flex: 1; min-width: 0; height: 38px; padding: 0 10px; color: #dce1ed; background: #0c1019; border: 1px solid #283044; border-radius: 9px; font-size: 12px; }
+.graph-focus-form label { display: grid; gap: 5px; color: #8994aa; font-size: 9px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.graph-focus-form input[type="number"] { width: 64px; height: 38px; padding: 0 8px; text-align: center; color: #dce1ed; background: #0c1019; border: 1px solid #283044; border-radius: 9px; font-size: 12px; }
+
+/* Causality tree */
+.causal-tree { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.causal-tree .causal-tree { margin-top: 6px; padding-left: 18px; border-left: 1px dashed rgba(167,178,207,.18); }
+.causal-tree .entity-row { max-width: 100%; }
+
+/* Rules Engine */
+.rule-create-button { width: 100%; justify-content: center; margin-bottom: 14px; }
+.rule-list { max-height: 440px; }
+.rule-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px solid rgba(167,178,207,.08); }
+.rule-row:last-child { border-bottom: 0; }
+.rule-toggle input { accent-color: var(--violet); width: 17px; height: 17px; cursor: pointer; }
+.rule-summary { flex: 1; min-width: 0; display: grid; gap: 3px; padding: 9px 10px; text-align: left; background: #0c1019; border: 1px solid #242c3d; border-radius: 10px; cursor: pointer; }
+.rule-summary:hover { border-color: #3a4560; }
+.rule-summary strong { font-size: 12px; }
+.rule-condition { color: #a9b2c7; font-size: 10px; line-height: 1.5; }
+.rule-condition em { color: #cbbcff; font-style: normal; }
+.rule-last-log { overflow: hidden; color: #657088; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+
+/* RuleSection (inspector) */
+.rule-section .rule-log { max-height: 160px; overflow: auto; }
+.rule-section .rule-log li { align-items: start; }
+.rule-section .rule-log svg { flex-shrink: 0; margin-top: 1px; color: var(--amber); }

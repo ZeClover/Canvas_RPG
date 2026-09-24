@@ -7,6 +7,10 @@ import { CanvasToolbar } from "./components/CanvasToolbar";
 import { CommandPalette } from "./components/CommandPalette";
 import { EntityInspector } from "./components/EntityInspector";
 import { Minimap } from "./components/Minimap";
+import { CausalityPanel } from "./components/panels/CausalityPanel";
+import { KnowledgeEnginePanel } from "./components/panels/KnowledgeEnginePanel";
+import { MysteryBoardPanel } from "./components/panels/MysteryBoardPanel";
+import { RulesEnginePanel } from "./components/panels/RulesEnginePanel";
 import { QuickEditor } from "./components/QuickEditor";
 import { RelationInspector } from "./components/RelationInspector";
 import { TimelinePanel } from "./components/TimelinePanel";
@@ -134,6 +138,10 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [camera, setCamera] = useState(initialCamera);
   const [searchOpen, setSearchOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [mysteryOpen, setMysteryOpen] = useState(false);
+  const [causalityOpen, setCausalityOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
 
@@ -231,6 +239,10 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
         onSave={() => void store.saveNow()}
         onExport={() => void exportCurrentCampaign()}
         onOpenTimeline={() => setTimelineOpen(true)}
+        onOpenKnowledge={() => setKnowledgeOpen(true)}
+        onOpenMystery={() => setMysteryOpen(true)}
+        onOpenCausality={() => setCausalityOpen(true)}
+        onOpenRules={() => setRulesOpen(true)}
       />
       <main className="workspace-main">
         <Suspense fallback={<div className="canvas-loading"><span className="loading-orbit" />Preparando o mapa…</div>}>
@@ -311,6 +323,43 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
           entities={state.entities}
           onClose={() => setTimelineOpen(false)}
           onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {knowledgeOpen && (
+        <KnowledgeEnginePanel
+          entities={state.entities}
+          relations={state.relations}
+          onClose={() => setKnowledgeOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {mysteryOpen && (
+        <MysteryBoardPanel
+          entities={state.entities}
+          relations={state.relations}
+          onClose={() => setMysteryOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {causalityOpen && (
+        <CausalityPanel
+          entities={state.entities}
+          relations={state.relations}
+          onClose={() => setCausalityOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {rulesOpen && (
+        <RulesEnginePanel
+          entities={state.entities}
+          onClose={() => setRulesOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+          onToggleEnabled={(id, enabled) => {
+            const rule = state.entities.find((entity) => entity.id === id);
+            if (!rule) return;
+            store.updateEntity(id, { fields: { ...rule.fields, enabled } });
+          }}
+          onCreateRule={() => { createAtCenter("rule"); setRulesOpen(false); }}
         />
       )}
     </div>

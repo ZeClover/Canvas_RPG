@@ -1,5 +1,6 @@
 import { kindConfig } from "../domain/entityKindRegistry";
 import { createId } from "../domain/id";
+import { evaluateRulesOnce } from "../domain/rulesEngine";
 import type {
   Campaign,
   CampaignData,
@@ -107,11 +108,46 @@ export class CampaignStore {
     if (this.undoStack.length > 150) this.undoStack.shift();
     this.redoStack = [];
     this.mutationVersion += 1;
-    const next = { ...mutator(this.state), dirty: true };
+    const mutated = { ...mutator(this.state), dirty: true };
+    const next = this.applyRules(before, mutated);
     this.trackChanges(before, { entities: next.entities, relations: next.relations, views: next.views });
     this.state = next;
     this.emit();
     this.scheduleSave();
+  }
+
+  /** Rules Engine: after a normal mutation, check whether any watched
+   * entity just transitioned into a rule's trigger status, and apply that
+   * rule's action — deterministically, no AI involved. Runs in bounded
+   * passes (never more than 5) so one rule's action can trigger another
+   * ("butterfly effect" chains) without any risk of looping forever. Each
+   * pass compares against the entities from *before that pass*, so a rule
+   * only fires once per actual transition. */
+  private applyRules(before: Snapshot, next: CampaignState): CampaignState {
+    let entities = next.entities;
+    let relations = next.relations;
+    let previousById = new Map(before.entities.map((entity) => [entity.id, entity]));
+    let changed = false;
+
+    for (let pass = 0; pass < 5; pass += 1) {
+      const rules = entities.filter((entity) => entity.kind === "rule");
+      if (!rules.length) break;
+      const result = evaluateRulesOnce(rules, previousById, entities, relations);
+      if (!result.entityUpdates.size && !result.newRelations.length && !result.ruleFieldUpdates.size) break;
+
+      changed = true;
+      previousById = new Map(entities.map((entity) => [entity.id, entity]));
+      const now = Date.now();
+      entities = entities.map((entity) => {
+        const update = result.entityUpdates.get(entity.id);
+        const ruleFields = result.ruleFieldUpdates.get(entity.id);
+        if (!update && !ruleFields) return entity;
+        return { ...entity, ...update, fields: ruleFields ?? entity.fields, updatedAt: now };
+      });
+      relations = [...relations, ...result.newRelations];
+    }
+
+    return changed ? { ...next, entities, relations } : next;
   }
 
   private scheduleSave(): void {

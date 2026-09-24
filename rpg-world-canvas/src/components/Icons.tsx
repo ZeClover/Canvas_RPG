@@ -26,4 +26,10 @@ export const Icons = {
   eye: (props: IconProps) => <IconBase {...props}><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></IconBase>,
   world: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9Z" /></IconBase>,
   clock: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></IconBase>,
+  book: (props: IconProps) => <IconBase {...props}><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Z" /><path d="M4 19.5A2 2 0 0 1 6 17.5h13" /></IconBase>,
+  web: (props: IconProps) => <IconBase {...props}><circle cx="6" cy="7" r="2.4" /><circle cx="18" cy="7" r="2.4" /><circle cx="12" cy="18" r="2.4" /><path d="M8.1 8.1 10 16M15.9 8.1 14 16M8.3 7h7.4" /></IconBase>,
+  branch: (props: IconProps) => <IconBase {...props}><circle cx="6" cy="5" r="2.2" /><circle cx="6" cy="19" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M6 7.2V16.8M6 8c0 4 4 4 10 4" /></IconBase>,
+  gear: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="3.3" /><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M17.8 6.2l-1.6 1.6M7.8 16.2l-1.6 1.6M17.8 17.8l-1.6-1.6M7.8 7.8 6.2 6.2" /></IconBase>,
+  tools: (props: IconProps) => <IconBase {...props}><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.7 2.7-2-2 2.7-2.7Z" /></IconBase>,
+  chevronDown: (props: IconProps) => <IconBase {...props}><path d="m6 9 6 6 6-6" /></IconBase>,
 };

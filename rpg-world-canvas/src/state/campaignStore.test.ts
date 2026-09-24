@@ -86,4 +86,30 @@ describe("CampaignStore", () => {
     store.setActiveView(npcView.id);
     expect(store.getSnapshot().activeViewId).toBe(npcView.id);
   });
+
+  it("Rules Engine: a regra semeada dispara sozinha quando a entidade observada atinge o status do gatilho", () => {
+    const store = new CampaignStore(createDemoCampaign());
+    const dungeon = store.getSnapshot().entities.find((entity) => entity.title === "A Dungeon")!;
+    const quest = store.getSnapshot().entities.find((entity) => entity.title === "O Exercício Perigoso")!;
+    expect(quest.status).toBe("Ativa");
+
+    store.updateEntity(dungeon.id, { status: "Instável" });
+
+    const after = store.getSnapshot();
+    expect(after.entities.find((entity) => entity.id === quest.id)?.status).toBe("Suspensa");
+    const rule = after.entities.find((entity) => entity.kind === "rule")!;
+    expect((rule.fields as { log: unknown[] }).log).toHaveLength(1);
+  });
+
+  it("Rules Engine: não dispara de novo enquanto o status observado permanece o mesmo", () => {
+    const store = new CampaignStore(createDemoCampaign());
+    const dungeon = store.getSnapshot().entities.find((entity) => entity.title === "A Dungeon")!;
+    store.updateEntity(dungeon.id, { status: "Instável" });
+
+    const quest = store.getSnapshot().entities.find((entity) => entity.title === "O Exercício Perigoso")!;
+    store.updateEntity(quest.id, { status: "Ativa" }); // o mestre reverte manualmente
+    store.updateEntity(dungeon.id, { summary: "Atualizado" }); // status da dungeon continua "Instável"
+
+    expect(store.getSnapshot().entities.find((entity) => entity.id === quest.id)?.status).toBe("Ativa");
+  });
 });

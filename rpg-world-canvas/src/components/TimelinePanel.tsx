@@ -40,9 +40,9 @@ export function TimelinePanel({ entities, onClose, onFocusEntity }: TimelinePane
   }, [entities, search, showEvents, showSessions]);
 
   return (
-    <div className="dialog-backdrop session-backdrop" onMouseDown={onClose}>
-      <section className="session-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Timeline da campanha">
-        <header className="session-panel-heading">
+    <div className="dialog-backdrop tool-backdrop" onMouseDown={onClose}>
+      <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Timeline da campanha">
+        <header className="tool-panel-heading">
           <div><span className="eyebrow">TIMELINE</span><h2>Linha do tempo</h2></div>
           <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
@@ -66,7 +66,7 @@ export function TimelinePanel({ entities, onClose, onFocusEntity }: TimelinePane
               </button>
             </li>
           ))}
-          {!rows.length && <li className="session-empty">Nenhum evento ou sessão cadastrado ainda.</li>}
+          {!rows.length && <li className="tool-panel-empty">Nenhum evento ou sessão cadastrado ainda.</li>}
         </ul>
       </section>
     </div>

@@ -21,6 +21,7 @@ export function createDefaultViews(campaignId: string): View[] {
     view("Facções", "🚩", ["faction"]),
     view("Locais", "📍", ["location", "city", "region"]),
     view("Mistérios", "🔍", ["secret", "clue", "rumor"]),
+    view("Regras", "🧩", ["rule"]),
   ];
 }
 
@@ -107,11 +108,45 @@ export function createDemoCampaign(): CampaignData {
   ];
 
   const entityIds = new Map<string, string>();
-  const entities = entitySeeds.map((seed) => {
+  const baseEntities = entitySeeds.map((seed) => {
     const entity = buildEntity(campaign.id, seed, groupIds, now);
     entityIds.set(seed.key, entity.id);
     return entity;
   });
+
+  // Regra de exemplo (Rules Engine, Fase 3): totalmente determinística —
+  // nenhuma IA decide isso, é só uma condição/ação que o próprio
+  // CampaignStore avalia a cada mudança de status.
+  const ruleFields = {
+    enabled: true,
+    trigger: { kind: "status_equals", entityId: entityIds.get("l_dungeon")!, value: "Instável" },
+    action: { kind: "set_status", targetEntityId: entityIds.get("q_exercise")!, value: "Suspensa", relationType: "leads_to" },
+    log: [],
+  };
+  const ruleEntity: Entity = {
+    id: createId("entity"),
+    campaignId: campaign.id,
+    kind: "rule",
+    title: "Dungeon instável suspende o exercício",
+    summary: "Se a Dungeon ficar Instável, o Exercício Perigoso é suspenso automaticamente.",
+    color: null,
+    icon: null,
+    imageSrc: null,
+    tags: [],
+    status: null,
+    fields: ruleFields,
+    x: 900,
+    y: 420,
+    width: kindConfig("rule").width,
+    height: kindConfig("rule").height,
+    groupId: groupIds.get("campus") ?? null,
+    visibility: "gm_only",
+    important: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+  entityIds.set("rule_dungeon_unstable", ruleEntity.id);
+  const entities = [...baseEntities, ruleEntity];
 
   const relationSeeds: Array<{ from: string; to: string; type: RelationType; label?: string }> = [
     { from: "n_potter", to: "n_vivian", type: "trusts" },
@@ -124,7 +159,9 @@ export function createDemoCampaign(): CampaignData {
     { from: "c_rune", to: "s_rune", type: "points_to" },
     { from: "r_dungeon", to: "e_alarm", type: "originated_from" },
     { from: "e_alarm", to: "q_exercise", type: "leads_to" },
+    { from: "q_exercise", to: "sq_grimorio", type: "leads_to" },
     { from: "n_vivian", to: "s_rune", type: "knows_about" },
+    { from: "n_potter", to: "s_rune", type: "knows_about" },
   ];
   const relations: Relation[] = relationSeeds.map((seed) => ({
     id: createId("relation"),
