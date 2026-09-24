@@ -7,14 +7,19 @@ import type { Entity, EntityKind, Relation, RelationType, Visibility } from "../
 import { RELATION_TYPES } from "../domain/types";
 import { ColorPicker } from "./ColorPicker";
 import { Icons } from "./Icons";
+import { EcologySection } from "./sections/EcologySection";
 import { EconomySection } from "./sections/EconomySection";
+import { ForeshadowingSection } from "./sections/ForeshadowingSection";
 import { NpcSection } from "./sections/NpcSection";
 import { ProjectSection } from "./sections/ProjectSection";
 import { QuestSection } from "./sections/QuestSection";
 import { ResourceSection } from "./sections/ResourceSection";
 import { RuleSection } from "./sections/RuleSection";
+import { RumorSection } from "./sections/RumorSection";
+import { SceneSection } from "./sections/SceneSection";
 import { SessionSection } from "./sections/SessionSection";
 import { SettlementSection } from "./sections/SettlementSection";
+import { ThemeSection } from "./sections/ThemeSection";
 
 interface EntityInspectorProps {
   entity: Entity;
@@ -171,6 +176,11 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
       {showKindSection && entity.kind === "project" && <ProjectSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "item" && <EconomySection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "resource" && <ResourceSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "scene" && <SceneSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "theme" && <ThemeSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "foreshadowing" && <ForeshadowingSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "creature" && <EcologySection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "rumor" && <RumorSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
 
       <div className="size-fields">
         <label>Largura<input value={Math.round(entity.width)} inputMode="numeric" onChange={(event) => onUpdate({ width: Math.max(80, Number(event.target.value) || entity.width) })} /></label>

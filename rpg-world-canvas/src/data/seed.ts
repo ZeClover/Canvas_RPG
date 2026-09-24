@@ -25,6 +25,8 @@ export function createDefaultViews(campaignId: string): View[] {
     view("Regras", "🧩", ["rule"]),
     view("Projetos", "🛠️", ["project"]),
     view("Economia", "🎒", ["item", "resource"]),
+    view("Narrativa", "🎬", ["scene", "theme", "foreshadowing"]),
+    view("Criaturas", "🐾", ["creature"]),
   ];
 }
 
@@ -86,12 +88,14 @@ export function createDemoCampaign(): CampaignData {
     { key: "campus", kind: "group", title: "CAMPUS", x: -300, y: -300 },
     { key: "sessions", kind: "group", title: "SESSÕES", x: 2900, y: -300 },
     { key: "region", kind: "group", title: "REGIÃO", x: -300, y: 1300 },
+    { key: "narrative", kind: "group", title: "NARRATIVA", x: -300, y: 2100 },
   ];
   const groupIds = new Map<string, string>();
   const groupSizes: Record<string, { width: number; height: number }> = {
     campus: { width: 2200, height: 1400 },
     sessions: { width: 1600, height: 1400 },
     region: { width: 1600, height: 700 },
+    narrative: { width: 1600, height: 560 },
   };
   const groups = groupSeeds.map((seed) => {
     const entity = buildEntity(campaign.id, { ...seed, x: seed.x, y: seed.y }, groupIds, now);
@@ -112,7 +116,10 @@ export function createDemoCampaign(): CampaignData {
     { key: "sq_grimorio", kind: "side_quest", title: "O Grimório Sumido", x: 500, y: 420, summary: "Criada a partir de uma suspeita de Kaleb.", status: "Disponível", groupKey: "campus" },
     { key: "s_rune", kind: "secret", title: "A runa quebrada abre um caminho", x: -180, y: 420, summary: "Só Vivian e Potter sabem disso.", groupKey: "campus" },
     { key: "c_rune", kind: "clue", title: "Pista: runa quebrada", x: -180, y: 680, summary: "A mesma runa existe na entrada proibida.", groupKey: "campus" },
-    { key: "r_dungeon", kind: "rumor", title: "\"A Dungeon está mudando\"", x: 160, y: 680, summary: "Circula entre os alunos do último ano.", groupKey: "campus" },
+    {
+      key: "r_dungeon", kind: "rumor", title: "\"A Dungeon está mudando\"", x: 160, y: 680, summary: "Circula entre os alunos do último ano.", groupKey: "campus",
+      fields: { truth: "Verdadeiro", source: "Alunos do último ano", spreadNotes: "Comentado nos corredores depois das aulas.", templateId: null },
+    },
     { key: "e_alarm", kind: "event", title: "Alarme na Dungeon", x: 500, y: 680, summary: "Sinos tocam no meio da noite.", groupKey: "campus" },
     { key: "sess_01", kind: "session", title: "Sessão 01 · A Primeira Aula", x: 3000, y: -180, summary: "Abertura da campanha.", groupKey: "sessions" },
     { key: "sess_02", kind: "session", title: "Sessão 02 · A Dungeon Desperta", x: 3400, y: -180, summary: "O alarme toca.", groupKey: "sessions" },
@@ -148,6 +155,25 @@ export function createDemoCampaign(): CampaignData {
     {
       key: "res_racoes", kind: "resource", title: "Rações da Academia", x: 160, y: 1700, summary: "Estoque de comida usado em expedições à Dungeon.", groupKey: "region",
       fields: { stock: 40, unit: "porções", criticalThreshold: 15, regenNote: "Reabastece 20 a cada sessão de mercado", notes: "Consumidas durante expedições à Dungeon." },
+    },
+    {
+      key: "creature_shadow", kind: "creature", title: "Sombra da Dungeon", x: -180, y: 2220, summary: "Uma silhueta que se move nas paredes, nunca vista por completo.", groupKey: "narrative",
+      fields: { habitat: "Corredores da Dungeon, sempre longe da luz", diet: "Drena mana ambiente", behavior: "Evita confronto direto; observa e desaparece.", threatLevel: "Alta", groupSize: "Solitário" },
+    },
+    {
+      key: "scene_crack_door", kind: "scene", title: "A Porta Rachada", x: 160, y: 2220, summary: "O momento em que o grupo encontra a entrada proibida pela primeira vez.", groupKey: "narrative",
+      fields: {
+        mood: "Tenso, curioso", readAloud: "A pedra está rachada ao meio, e pelo vão frio escapa um cheiro de terra molhada e algo mais antigo.",
+        sensoryDetails: ["frio incomum", "silêncio absoluto", "cheiro de terra molhada"], complications: "A runa na porta reage se alguém tocar sem cuidado.", musicNote: "sino distante, uma nota só",
+      },
+    },
+    {
+      key: "theme_secrets", kind: "theme", title: "Segredos Enterrados", x: 500, y: 2220, summary: "O que a Academia escondeu não ficou enterrado — só quieto.", groupKey: "narrative",
+      fields: { motifs: ["portas trancadas", "runas quebradas", "silêncio dos professores"], notes: "Reforçar sempre que um NPC souber mais do que conta." },
+    },
+    {
+      key: "foreshadowing_ring", kind: "foreshadowing", title: "O Anel Pulsa Perto da Dungeon", x: -180, y: 2400, summary: "O Anel do Vínculo esquenta sempre que alguém se aproxima da entrada proibida.", groupKey: "narrative",
+      fields: { status: "Reforçado", hint: "O anel esquenta e vibra perto da Dungeon, sem explicação ainda dada.", intendedPayoff: "O anel é feito do mesmo material das runas — foi forjado para reagir a elas.", log: [{ id: "seed_foreshadowing_log_1", at: 0, note: "Mencionado na Sessão 02, quando o grupo se aproximou da entrada." }] },
     },
   ];
 
@@ -209,6 +235,10 @@ export function createDemoCampaign(): CampaignData {
     { from: "city_ashgrove", to: "region_vale", type: "belongs_to" },
     { from: "l_dungeon", to: "region_vale", type: "belongs_to" },
     { from: "proj_ala_leste", to: "res_racoes", type: "requires" },
+    { from: "creature_shadow", to: "l_dungeon", type: "happens_at" },
+    { from: "scene_crack_door", to: "l_dungeon", type: "happens_at" },
+    { from: "foreshadowing_ring", to: "item_ring", type: "points_to" },
+    { from: "foreshadowing_ring", to: "l_dungeon", type: "points_to" },
   ];
   const relations: Relation[] = relationSeeds.map((seed) => ({
     id: createId("relation"),

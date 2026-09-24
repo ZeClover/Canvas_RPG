@@ -60,14 +60,14 @@ export type RelationType =
   | "member_of" | "offers" | "involves" | "happens_at" | "reveals"
   | "caused" | "points_to" | "knows_about" | "originated_from"
   | "improves" | "belongs_to" | "leads_to" | "blocks" | "requires"
-  | "unlocks_on_success" | "unlocks_on_fail"
+  | "unlocks_on_success" | "unlocks_on_fail" | "preys_on"
   | "custom";
 
 export const RELATION_TYPES: RelationType[] = [
   "knows", "hates", "loves", "trusts", "fears", "works_for", "member_of",
   "offers", "involves", "happens_at", "reveals", "caused", "points_to",
   "knows_about", "originated_from", "improves", "belongs_to", "leads_to",
-  "blocks", "requires", "unlocks_on_success", "unlocks_on_fail", "custom",
+  "blocks", "requires", "unlocks_on_success", "unlocks_on_fail", "preys_on", "custom",
 ];
 
 export interface Entity {

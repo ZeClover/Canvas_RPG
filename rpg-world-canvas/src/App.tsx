@@ -13,6 +13,7 @@ import { KnowledgeEnginePanel } from "./components/panels/KnowledgeEnginePanel";
 import { ModulesPanel } from "./components/panels/ModulesPanel";
 import { MysteryBoardPanel } from "./components/panels/MysteryBoardPanel";
 import { RulesEnginePanel } from "./components/panels/RulesEnginePanel";
+import { RumorGeneratorPanel } from "./components/panels/RumorGeneratorPanel";
 import { SettlementsPanel } from "./components/panels/SettlementsPanel";
 import { Icons } from "./components/Icons";
 import { QuickEditor } from "./components/QuickEditor";
@@ -149,6 +150,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [rulesOpen, setRulesOpen] = useState(false);
   const [settlementsOpen, setSettlementsOpen] = useState(false);
   const [economyOpen, setEconomyOpen] = useState(false);
+  const [rumorGeneratorOpen, setRumorGeneratorOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
@@ -243,6 +245,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     { key: "rules", label: "Regras", icon: Icons.gear, onClick: () => setRulesOpen(true), visible: hasModule("rules_engine") },
     { key: "settlements", label: "Progresso do mundo", icon: Icons.world, onClick: () => setSettlementsOpen(true), visible: hasModule("settlement_engine") },
     { key: "economy", label: "Economia & recursos", icon: Icons.coin, onClick: () => setEconomyOpen(true), visible: hasModule("economy_engine", "resource_engine") },
+    { key: "rumor-generator", label: "Gerador de rumores", icon: Icons.chat, onClick: () => setRumorGeneratorOpen(true), visible: hasModule("rumor_engine") },
     { key: "modules", label: "Módulos desta campanha", icon: Icons.toggles, onClick: () => setModulesOpen(true), visible: true },
   ];
   const tools: ToolMenuItem[] = allTools.filter((tool) => tool.visible);
@@ -396,6 +399,18 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
           showResources={hasModule("resource_engine")}
           onClose={() => setEconomyOpen(false)}
           onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {rumorGeneratorOpen && (
+        <RumorGeneratorPanel
+          entities={state.entities}
+          onClose={() => setRumorGeneratorOpen(false)}
+          onCreateRumor={(title, summary, fields) => {
+            const center = canvasRef.current?.viewportCenter() ?? { x: 0, y: 0 };
+            const created = store.createEntity("rumor", { x: center.x - 120, y: center.y - 60 }, { title, summary, fields });
+            canvasRef.current?.focusEntity(created.id);
+            setRumorGeneratorOpen(false);
+          }}
         />
       )}
       {modulesOpen && (

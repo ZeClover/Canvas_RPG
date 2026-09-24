@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest";
+import { defaultEcologyFields, readEcologyFields } from "./ecologyFields";
 import { defaultEconomyFields, readEconomyFields } from "./economyFields";
 import { defaultEventFields, readEventFields } from "./eventFields";
+import { defaultForeshadowingFields, readForeshadowingFields } from "./foreshadowingFields";
 import { defaultNpcFields, readNpcFields } from "./npcFields";
 import { defaultProjectFields, projectProgress, readProjectFields } from "./projectFields";
 import { defaultQuestFields, readQuestFields } from "./questFields";
 import { defaultRelationStats, readRelationStats } from "./relationStats";
 import { defaultResourceFields, isResourceCritical, readResourceFields } from "./resourceFields";
 import { defaultRuleFields, readRuleFields } from "./ruleFields";
+import { defaultRumorFields, readRumorFields } from "./rumorFields";
+import { defaultSceneFields, readSceneFields } from "./sceneFields";
 import { defaultSessionFields, readSessionFields } from "./sessionFields";
 import { defaultSettlementFields, readSettlementFields } from "./settlementFields";
+import { defaultThemeFields, readThemeFields } from "./themeFields";
 
 describe("leitores de campos por tipo", () => {
   it("npc: retorna os padrões para um bag vazio (elemento antigo/sem esses campos)", () => {
@@ -114,5 +119,41 @@ describe("leitores de campos por tipo", () => {
     expect(isResourceCritical(readResourceFields({ stock: 5, criticalThreshold: 10 }))).toBe(true);
     expect(isResourceCritical(readResourceFields({ stock: 20, criticalThreshold: 10 }))).toBe(false);
     expect(isResourceCritical(readResourceFields({ stock: 10, criticalThreshold: 10 }))).toBe(true);
+  });
+
+  it("cena: retorna os padrões para um bag vazio", () => {
+    expect(readSceneFields({})).toEqual(defaultSceneFields());
+  });
+
+  it("cena: detalhes sensoriais ignoram itens não-string", () => {
+    expect(readSceneFields({ sensoryDetails: ["frio", 42, "silêncio"] }).sensoryDetails).toEqual(["frio", "silêncio"]);
+  });
+
+  it("tema: retorna os padrões para um bag vazio", () => {
+    expect(readThemeFields({})).toEqual(defaultThemeFields());
+  });
+
+  it("foreshadowing: retorna os padrões para um bag vazio", () => {
+    expect(readForeshadowingFields({})).toEqual(defaultForeshadowingFields());
+  });
+
+  it("foreshadowing: um status desconhecido cai no padrão", () => {
+    expect(readForeshadowingFields({ status: "Esquecido" }).status).toBe(defaultForeshadowingFields().status);
+  });
+
+  it("ecologia: retorna os padrões para um bag vazio", () => {
+    expect(readEcologyFields({})).toEqual(defaultEcologyFields());
+  });
+
+  it("ecologia: um nível de ameaça desconhecido cai no padrão", () => {
+    expect(readEcologyFields({ threatLevel: "Apocalíptica" }).threatLevel).toBe(defaultEcologyFields().threatLevel);
+  });
+
+  it("rumor: retorna os padrões para um bag vazio", () => {
+    expect(readRumorFields({})).toEqual(defaultRumorFields());
+  });
+
+  it("rumor: um estado de verdade desconhecido cai no padrão", () => {
+    expect(readRumorFields({ truth: "Meio verdade" }).truth).toBe(defaultRumorFields().truth);
   });
 });

@@ -358,3 +358,8 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .module-row-body { display: grid; gap: 3px; }
 .module-row-body strong { font-size: 12px; }
 .module-row-body small { color: #8994aa; font-size: 10px; line-height: 1.45; }
+
+/* Rumor Generator */
+.rumor-slots { margin-bottom: 6px; }
+.rumor-preview { margin: 8px 0 16px; padding: 12px 14px; color: #dce1ed; background: #0c1019; border: 1px solid #242c3d; border-radius: 10px; font-size: 13px; line-height: 1.55; }
+.rumor-create-button { width: 100%; justify-content: center; }

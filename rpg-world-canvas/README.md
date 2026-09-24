@@ -1,4 +1,4 @@
-# RPG World Canvas — v0.4.1 (Fase 4 + módulos por campanha)
+# RPG World Canvas — v0.5.0 (Fase 5)
 
 Um motor visual de campanhas de RPG de mesa: NPCs, quests, locais, facções, segredos, sessões e tudo mais vivem como o **mesmo dado**, visto de formas diferentes (Canvas, Views, busca). Não é um VTT, não é uma wiki, não é um gerenciador de projeto — é uma memória visual e interativa do universo.
 
@@ -25,9 +25,10 @@ Desligar um módulo nunca apaga nada: ele só esconde a seção especializada da
 ```
 src/
   domain/     tipos, registro de tipos de card/relação, câmera/espaço, índice espacial, orçamento de renderização,
-              filtro de views, leitores de campos por tipo (NPC/Quest/Sessão/Evento/Regra), graph.ts (BFS/grau/
-              cadeia causal — Mystery Board e Causalidade), rulesEngine.ts (avaliação pura do Rules Engine),
-              modules.ts (registro dos módulos opcionais por campanha e o mapa tipo → módulo dono)
+              filtro de views, leitores de campos por tipo (um por tipo especializado), graph.ts (BFS/grau/cadeia
+              causal — Mystery Board e Causalidade), rulesEngine.ts (avaliação pura do Rules Engine), modules.ts
+              (registro dos módulos opcionais por campanha e o mapa tipo → módulo dono), rumorTemplates.ts
+              (montagem determinística de texto por template para o Gerador de rumores)
   data/       IndexedDB (banco 100% local), arquivo de campanha (.rpgworld) com validação estrita, seed/demo
   state/      CampaignStore — única fonte de verdade reativa (undo/redo, autosave granular, avalia as regras)
   canvas/     CanvasEngine — um único <canvas> visível e interativo (ver abaixo)
@@ -62,7 +63,7 @@ Exclusão em cascata: apagar um elemento remove as relações que o tocam; apaga
 - criação de campanhas (nível 1: "Visão Geral dos RPGs"), com projeto de exemplo semeado automaticamente no primeiro uso;
 - Canvas funcional com todas as interações acima;
 - 27 tipos de card (26 tipos de conteúdo + grupo), cada um com ícone, cor padrão e tamanho padrão configuráveis;
-- 21 tipos de relação, cada um com cor, estilo de traço (sólido/tracejado/pontilhado) e estilo de seta (triângulo/losango/círculo) próprios — dá para diferenciar o tipo de conexão só de olhar, sem clicar;
+- 22 tipos de relação, cada um com cor, estilo de traço (sólido/tracejado/pontilhado) e estilo de seta (triângulo/losango/círculo) próprios — dá para diferenciar o tipo de conexão só de olhar, sem clicar;
 - grupos visuais aninhados;
 - views (filtros salvos) — "Visão Geral", "NPCs", "Quests", "Facções", "Locais", "Mistérios" por padrão;
 - busca global `Ctrl+K`;
@@ -99,11 +100,23 @@ Quatro seções novas no inspetor (uma por tipo de card) mais dois painéis glob
 
 A topbar não ganhou botões novos — os dois painéis desta fase entraram no mesmo menu **Ferramentas** da Fase 3, que já foi desenhado para crescer sem estourar a barra.
 
+## O que já funciona (Fase 5, conforme pedido)
+
+Cinco seções novas no inspetor mais um gerador global, todos determinísticos:
+
+- **Scene Composer**: seção dedicada para cenas (`kind: "scene"`) — tom/clima, texto para ler em voz alta, detalhes sensoriais e complicações. Quem está presente e onde a cena acontece é expresso pelas relações já existentes ("envolve"/"acontece em"), nunca uma lista paralela.
+- **Tema & Foreshadowing**: temas (`kind: "theme"`) guardam motivos recorrentes; presságios (`kind: "foreshadowing"`) têm status (`Plantado`/`Reforçado`/`Pago`/`Abandonado`), a pista plantada, o pagamento pretendido e um histórico anotado manualmente pelo mestre a cada vez que o presságio é reforçado em sessão — mesma disciplina do histórico de eventos do Settlement Engine.
+- **Encounter Ecology**: seção dedicada para criaturas (`kind: "creature"`) — habitat, dieta, comportamento, nível de ameaça e tamanho de grupo. Novo tipo de relação `preys_on` ("caça") para montar cadeias de predador/presa como dado de grafo real, reaproveitável por qualquer ferramenta futura que leia relações.
+- **Rumor Engine com templates**: seção dedicada para rumores (`kind: "rumor"`) — estado de verdade (só o mestre vê), fonte e como se espalha. O **Gerador de rumores** (novo painel global) monta a frase escolhendo um de seis templates fixos ("Dizem que {npc} foi visto perto de {local}...") e preenchendo cada espaço com um elemento já existente (ou texto livre) — é montagem de string determinística, nunca geração de texto; o botão "Criar rumor no Canvas" cria o card já com o resumo montado.
+
+## Módulos por campanha alcançam todas as Fases 2–5
+
+A partir desta entrega, **toda** ferramenta especializada — não só a de uma fase específica — é um módulo que cada campanha liga ou desliga em `Ferramentas → Módulos desta campanha`. Ver a seção "Módulos" acima para como isso funciona; o painel agora lista 15 módulos agrupados por fase (2 a 5).
+
 ## O que ainda não existe (fases seguintes, por design)
 
 Seguindo exatamente a ordem de fases pedida — não implementado de forma superficial, simplesmente ainda não começado:
 
-- **Fase 5** — Scene Composer, Foreshadowing Engine, Ecology Engine, Rumor Engine com templates.
 - **Fase 6** — Importação de transcrições, Campaign Health Dashboard, Player Knowledge View (o campo `visibility` em cada elemento já existe para isso, só falta a tela).
 - **Fase 7** — Multiverse Engine completo (o formato `UniverseLink` já existe no schema), World Communication System.
 
@@ -119,7 +132,7 @@ npm run dev
 ## Testes
 
 ```bash
-npm test           # 81 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
+npm test           # 94 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
 npm run build       # TypeScript estrito + build de produção (Vite)
 npx playwright install chromium   # uma vez
 npm run test:e2e    # teste visual/end-to-end (Playwright): abre a campanha de exemplo, arrasta um NPC real,
@@ -128,10 +141,10 @@ npm run test:e2e    # teste visual/end-to-end (Playwright): abre a campanha de e
 
 Cobertura atual: validação/serialização do arquivo de campanha (inclui rejeição de hierarquia circular de grupos e relação órfã); `CampaignStore` (criar/mover/desfazer/refazer, mover grupo com descendentes, exclusão em cascata, relação sem duplicar, duplicar preservando agrupamento, troca de view, **regra semeada dispara sozinha ao mudar o status observado e não dispara de novo enquanto o status não muda de novo**); `CanvasEngine` (fitAll seguro contra viewport 0×0, resize preservando câmera, arrastar, redimensionar, seleção múltipla, criar relação pela alça, clicar em filho de grupo arrasta o grupo, Alt+arrastar duplica, zoom no cursor, pan, `Esc` cancela); `repository` com IndexedDB real (diff granular não reescreve tudo, backup e restauração, cascata de relações órfãs); filtro de views; leitores de campos por tipo (NPC/Quest/Sessão/Evento/Regra/Assentamento/Projeto/Economia/Recurso/estatísticas de relação — sempre caem no padrão em vez de quebrar com dado antigo ou malformado, incluindo prosperidade/estabilidade sempre entre 0–100 e progresso/estoque-crítico sempre derivados, nunca armazenados); `graph.ts` (busca em largura com limite de profundidade, contagem de grau, pistas soltas, cadeia causal recursiva à prova de ciclo); `rulesEngine.ts` (dispara só na transição para o valor do gatilho, regra desativada nunca dispara, `create_relation` não duplica uma relação já existente, `mark_important` não mexe no status).
 
-Validação visual (Playwright, script avulso executado manualmente — não faz parte da suíte permanente): Fase 2 — abrir NPC → editar traços e adicionar conhecimento; abrir quest → editar objetivo/status; abrir sessão → finalizar e conferir o selo; abrir Timeline. Fase 3 — abrir Conhecimento → escolher um segredo → conferir conexões; abrir Mistério → explorar a partir de um elemento; abrir Causalidade → conferir a árvore causal; abrir Regras → conferir a regra semeada; **mudar o status de "A Dungeon" para "Instável" ao vivo no Canvas e confirmar que "O Exercício Perigoso" muda sozinho para "Suspensa"**, sem nenhum clique manual nessa segunda mudança. Fase 4 — abrir a cidade "Vilarejo de Ashgrove" → editar necessidades; abrir o projeto "Restaurar a Ala Leste" → marcar uma etapa e conferir a barra de progresso recalculada; abrir o item "Anel do Vínculo" e o recurso "Rações da Academia"; abrir os painéis "Progresso do mundo" e "Economia & recursos" e conferir os dados agregados.
+Validação visual (Playwright, script avulso executado manualmente — não faz parte da suíte permanente): Fase 2 — abrir NPC → editar traços e adicionar conhecimento; abrir quest → editar objetivo/status; abrir sessão → finalizar e conferir o selo; abrir Timeline. Fase 3 — abrir Conhecimento → escolher um segredo → conferir conexões; abrir Mistério → explorar a partir de um elemento; abrir Causalidade → conferir a árvore causal; abrir Regras → conferir a regra semeada; **mudar o status de "A Dungeon" para "Instável" ao vivo no Canvas e confirmar que "O Exercício Perigoso" muda sozinho para "Suspensa"**, sem nenhum clique manual nessa segunda mudança. Fase 4 — abrir a cidade "Vilarejo de Ashgrove" → editar necessidades; abrir o projeto "Restaurar a Ala Leste" → marcar uma etapa e conferir a barra de progresso recalculada; abrir o item "Anel do Vínculo" e o recurso "Rações da Academia"; abrir os painéis "Progresso do mundo" e "Economia & recursos" e conferir os dados agregados. Fase 5 — abrir a criatura, a cena, o tema, o presságio e o rumor semeados, conferindo cada seção; abrir o Gerador de rumores, escolher o template "Fulano foi visto fazendo algo estranho", preencher com NPC + local reais, conferir a prévia montada e **criar o rumor no Canvas, confirmando que o card nasce com o texto exato da prévia como resumo**. Módulos — desligar `npc_brain` e confirmar que a seção some do card e volta ao religar com os mesmos dados; desligar `rules_engine` e confirmar que "Regras" some do menu Ferramentas.
 
 ## Limitações desta entrega
 
 - Não empacotado como aplicativo desktop `.exe` ainda — roda como app web (Vite) local. O RPG Canvas Studio já tem esse caminho todo resolvido (Tauri + `BUILD_WINDOWS.bat`); portar é mecânico quando as Fases 2+ estiverem mais maduras.
 - IndexedDB, não SQLite — decisão deliberada para a Fase 1 (zero dependência nativa, 100% local, interface pronta para trocar depois).
-- Criar um elemento por duplo clique sempre cria um NPC por padrão (não há como perguntar "qual tipo?" num duplo clique); use o seletor de tipo na barra de ferramentas do canvas para os outros 24 tipos.
+- Criar um elemento por duplo clique sempre cria um NPC por padrão (não há como perguntar "qual tipo?" num duplo clique); use o seletor de tipo na barra de ferramentas do canvas para os outros 25 tipos.
