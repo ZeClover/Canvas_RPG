@@ -363,3 +363,31 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .rumor-slots { margin-bottom: 6px; }
 .rumor-preview { margin: 8px 0 16px; padding: 12px 14px; color: #dce1ed; background: #0c1019; border: 1px solid #242c3d; border-radius: 10px; font-size: 13px; line-height: 1.55; }
 .rumor-create-button { width: 100%; justify-content: center; }
+
+/* TranscriptSection */
+.transcript-content { min-height: 160px; max-height: 260px; font: 11px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; }
+.transcript-search { width: 100%; height: 36px; margin-bottom: 10px; padding: 0 10px; color: #dce1ed; background: #0c1019; border: 1px solid #283044; border-radius: 9px; font-size: 12px; }
+.transcript-match-count { margin: -4px 0 8px; color: #8994aa; font-size: 10px; }
+.transcript-matches { max-height: 180px; overflow: auto; }
+.transcript-matches .mini-list-text { white-space: normal; overflow: visible; font-size: 11px; line-height: 1.5; }
+.transcript-selection-form { margin: 4px 0 14px; padding: 12px; background: rgba(167,139,250,.06); border: 1px solid rgba(167,139,250,.2); border-radius: 11px; }
+.transcript-selection-preview { margin: 0 0 10px; color: #cbbcff; font-size: 11px; font-style: italic; line-height: 1.5; }
+.transcript-create-button { width: 100%; justify-content: center; margin-top: 4px; }
+
+/* Campaign Health */
+.health-breakdown { max-height: 400px; }
+.health-breakdown-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; background: #0c1019; border: 1px solid #242c3d; border-radius: 9px; }
+.health-breakdown-label { flex: 1; min-width: 0; font-size: 12px; }
+.health-breakdown-count { color: #8994aa; font: 11px/1 ui-monospace, monospace; }
+.health-signal-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.health-signal { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; text-align: left; color: #dce1ed; background: #0c1019; border: 1px solid #242c3d; border-radius: 10px; cursor: pointer; font-size: 12px; }
+.health-signal:hover { border-color: #3a4560; }
+.health-signal.is-warning .health-signal-count { color: #fda4af; }
+.health-signal.is-info .health-signal-count { color: #8994aa; }
+.health-signal-count { font: 11px/1 ui-monospace, monospace; font-weight: 700; }
+.health-signal-items { margin: 6px 0 0; max-height: 220px; overflow: auto; }
+
+/* Player Knowledge View */
+.player-view-count { flex-shrink: 0; color: #8994aa; font-size: 10px; white-space: nowrap; }
+.player-view-list { max-height: 480px; }
+.player-view-partial { color: #8994aa; font-style: italic; }

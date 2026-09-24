@@ -7,11 +7,13 @@ import { CanvasToolbar } from "./components/CanvasToolbar";
 import { CommandPalette } from "./components/CommandPalette";
 import { EntityInspector } from "./components/EntityInspector";
 import { Minimap } from "./components/Minimap";
+import { CampaignHealthPanel } from "./components/panels/CampaignHealthPanel";
 import { CausalityPanel } from "./components/panels/CausalityPanel";
 import { EconomyResourcesPanel } from "./components/panels/EconomyResourcesPanel";
 import { KnowledgeEnginePanel } from "./components/panels/KnowledgeEnginePanel";
 import { ModulesPanel } from "./components/panels/ModulesPanel";
 import { MysteryBoardPanel } from "./components/panels/MysteryBoardPanel";
+import { PlayerKnowledgeViewPanel } from "./components/panels/PlayerKnowledgeViewPanel";
 import { RulesEnginePanel } from "./components/panels/RulesEnginePanel";
 import { RumorGeneratorPanel } from "./components/panels/RumorGeneratorPanel";
 import { SettlementsPanel } from "./components/panels/SettlementsPanel";
@@ -151,6 +153,8 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [settlementsOpen, setSettlementsOpen] = useState(false);
   const [economyOpen, setEconomyOpen] = useState(false);
   const [rumorGeneratorOpen, setRumorGeneratorOpen] = useState(false);
+  const [campaignHealthOpen, setCampaignHealthOpen] = useState(false);
+  const [playerViewOpen, setPlayerViewOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
@@ -246,6 +250,8 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     { key: "settlements", label: "Progresso do mundo", icon: Icons.world, onClick: () => setSettlementsOpen(true), visible: hasModule("settlement_engine") },
     { key: "economy", label: "Economia & recursos", icon: Icons.coin, onClick: () => setEconomyOpen(true), visible: hasModule("economy_engine", "resource_engine") },
     { key: "rumor-generator", label: "Gerador de rumores", icon: Icons.chat, onClick: () => setRumorGeneratorOpen(true), visible: hasModule("rumor_engine") },
+    { key: "campaign-health", label: "Saúde da campanha", icon: Icons.pulse, onClick: () => setCampaignHealthOpen(true), visible: hasModule("campaign_health") },
+    { key: "player-view", label: "O que os jogadores sabem", icon: Icons.eye, onClick: () => setPlayerViewOpen(true), visible: hasModule("player_knowledge_view") },
     { key: "modules", label: "Módulos desta campanha", icon: Icons.toggles, onClick: () => setModulesOpen(true), visible: true },
   ];
   const tools: ToolMenuItem[] = allTools.filter((tool) => tool.visible);
@@ -304,6 +310,12 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
             onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
             onCreateRelation={(toId, type) => store.createRelation(selectedEntity.id, toId, type)}
             onDeleteRelation={(id) => store.deleteRelation(id)}
+            onCreateEntityFromTranscript={(kind, title, summary) => {
+              const center = canvasRef.current?.viewportCenter() ?? { x: 0, y: 0 };
+              const created = store.createEntity(kind, { x: center.x - 120, y: center.y - 60 }, { title, summary });
+              store.createRelation(created.id, selectedEntity.id, "originated_from");
+              canvasRef.current?.focusEntity(created.id);
+            }}
           />
         )}
         {selectedRelation && !editing && (
@@ -411,6 +423,21 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
             canvasRef.current?.focusEntity(created.id);
             setRumorGeneratorOpen(false);
           }}
+        />
+      )}
+      {campaignHealthOpen && (
+        <CampaignHealthPanel
+          entities={state.entities}
+          relations={state.relations}
+          onClose={() => setCampaignHealthOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {playerViewOpen && (
+        <PlayerKnowledgeViewPanel
+          entities={state.entities}
+          onClose={() => setPlayerViewOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
         />
       )}
       {modulesOpen && (

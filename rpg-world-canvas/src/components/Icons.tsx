@@ -35,4 +35,6 @@ export const Icons = {
   coin: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M9.5 15.5c.5.7 1.4 1 2.5 1 1.7 0 3-.8 3-2s-1.3-1.8-3-2-3-.8-3-2 1.3-2 3-2c1.1 0 2 .3 2.5 1" /></IconBase>,
   toggles: (props: IconProps) => <IconBase {...props}><rect x="3" y="5" width="18" height="6" rx="3" /><circle cx="9" cy="8" r="1.6" fill="currentColor" stroke="none" /><rect x="3" y="13" width="18" height="6" rx="3" /><circle cx="15" cy="16" r="1.6" fill="currentColor" stroke="none" /></IconBase>,
   chat: (props: IconProps) => <IconBase {...props}><path d="M4 5.5h16v10H9l-4 3.5v-3.5H4Z" /><path d="M8 10h8M8 13h5" /></IconBase>,
+  file: (props: IconProps) => <IconBase {...props}><path d="M6 2.5h9l3 3v16H6Z" /><path d="M15 2.5V6h3M9 12h6M9 15.5h6M9 8.5h2" /></IconBase>,
+  pulse: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M7 12h2.5l1.5-4 2.5 8 1.5-4H17" /></IconBase>,
 };

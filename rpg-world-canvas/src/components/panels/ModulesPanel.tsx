@@ -13,6 +13,7 @@ const PHASE_LABEL: Record<number, string> = {
   3: "Fase 3 — Conhecimento, mistério e automação",
   4: "Fase 4 — Mundo, projetos e economia",
   5: "Fase 5 — Cenas, presságios, ecologia e rumores",
+  6: "Fase 6 — Transcrições, saúde da campanha e visão dos jogadores",
 };
 
 /** Every specialized tool from Fase 2 onward is opt-in per campaign — a

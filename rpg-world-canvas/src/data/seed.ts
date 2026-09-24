@@ -1,7 +1,7 @@
 import { createId } from "../domain/id";
 import { kindConfig } from "../domain/entityKindRegistry";
 import { defaultEnabledModules } from "../domain/modules";
-import type { Campaign, CampaignData, Entity, EntityKind, Relation, RelationType, View } from "../domain/types";
+import type { Campaign, CampaignData, Entity, EntityKind, Relation, RelationType, View, Visibility } from "../domain/types";
 
 export function createDefaultViews(campaignId: string): View[] {
   const now = Date.now();
@@ -27,6 +27,7 @@ export function createDefaultViews(campaignId: string): View[] {
     view("Economia", "🎒", ["item", "resource"]),
     view("Narrativa", "🎬", ["scene", "theme", "foreshadowing"]),
     view("Criaturas", "🐾", ["creature"]),
+    view("Transcrições", "📝", ["transcript"]),
   ];
 }
 
@@ -43,6 +44,7 @@ interface EntitySeed {
   status?: string;
   important?: boolean;
   fields?: Record<string, unknown>;
+  visibility?: Visibility;
 }
 
 function buildEntity(campaignId: string, seed: EntitySeed, groupIds: Map<string, string>, now: number): Entity {
@@ -64,7 +66,7 @@ function buildEntity(campaignId: string, seed: EntitySeed, groupIds: Map<string,
     width: config.width,
     height: config.height,
     groupId: seed.groupKey ? groupIds.get(seed.groupKey) ?? null : null,
-    visibility: "gm_only",
+    visibility: seed.visibility ?? "gm_only",
     important: seed.important ?? false,
     createdAt: now,
     updatedAt: now,
@@ -115,10 +117,14 @@ export function createDemoCampaign(): CampaignData {
     { key: "q_exercise", kind: "quest", title: "O Exercício Perigoso", x: 160, y: 420, summary: "Um professor propõe um treino arriscado demais.", status: "Ativa", groupKey: "campus", important: true },
     { key: "sq_grimorio", kind: "side_quest", title: "O Grimório Sumido", x: 500, y: 420, summary: "Criada a partir de uma suspeita de Kaleb.", status: "Disponível", groupKey: "campus" },
     { key: "s_rune", kind: "secret", title: "A runa quebrada abre um caminho", x: -180, y: 420, summary: "Só Vivian e Potter sabem disso.", groupKey: "campus" },
-    { key: "c_rune", kind: "clue", title: "Pista: runa quebrada", x: -180, y: 680, summary: "A mesma runa existe na entrada proibida.", groupKey: "campus" },
+    {
+      key: "c_rune", kind: "clue", title: "Pista: runa quebrada", x: -180, y: 680, summary: "A mesma runa existe na entrada proibida.", groupKey: "campus",
+      visibility: "partial",
+    },
     {
       key: "r_dungeon", kind: "rumor", title: "\"A Dungeon está mudando\"", x: 160, y: 680, summary: "Circula entre os alunos do último ano.", groupKey: "campus",
       fields: { truth: "Verdadeiro", source: "Alunos do último ano", spreadNotes: "Comentado nos corredores depois das aulas.", templateId: null },
+      visibility: "revealed",
     },
     { key: "e_alarm", kind: "event", title: "Alarme na Dungeon", x: 500, y: 680, summary: "Sinos tocam no meio da noite.", groupKey: "campus" },
     { key: "sess_01", kind: "session", title: "Sessão 01 · A Primeira Aula", x: 3000, y: -180, summary: "Abertura da campanha.", groupKey: "sessions" },
@@ -174,6 +180,20 @@ export function createDemoCampaign(): CampaignData {
     {
       key: "foreshadowing_ring", kind: "foreshadowing", title: "O Anel Pulsa Perto da Dungeon", x: -180, y: 2400, summary: "O Anel do Vínculo esquenta sempre que alguém se aproxima da entrada proibida.", groupKey: "narrative",
       fields: { status: "Reforçado", hint: "O anel esquenta e vibra perto da Dungeon, sem explicação ainda dada.", intendedPayoff: "O anel é feito do mesmo material das runas — foi forjado para reagir a elas.", log: [{ id: "seed_foreshadowing_log_1", at: 0, note: "Mencionado na Sessão 02, quando o grupo se aproximou da entrada." }] },
+    },
+    {
+      key: "transcript_sess02", kind: "transcript", title: "Transcrição — Sessão 02", x: 160, y: 2400, summary: "Gravação da sessão em que o grupo se aproxima da entrada proibida.", groupKey: "narrative",
+      fields: {
+        sourceFormat: "srt",
+        content: [
+          "Mestre: Vocês chegam à porta rachada da Dungeon.",
+          "Kaleb: Acho que essa runa não é normal.",
+          "Vivian: Essa runa é antiga, mais antiga que a Academia.",
+          "Potter: Fiquem longe da runa até sabermos mais.",
+          "Kaleb: A Dungeon parece estar respirando.",
+          "Vivian: Eu já vi essa runa antes, num livro proibido.",
+        ].join("\n"),
+      },
     },
   ];
 
@@ -239,6 +259,7 @@ export function createDemoCampaign(): CampaignData {
     { from: "scene_crack_door", to: "l_dungeon", type: "happens_at" },
     { from: "foreshadowing_ring", to: "item_ring", type: "points_to" },
     { from: "foreshadowing_ring", to: "l_dungeon", type: "points_to" },
+    { from: "transcript_sess02", to: "sess_02", type: "belongs_to" },
   ];
   const relations: Relation[] = relationSeeds.map((seed) => ({
     id: createId("relation"),

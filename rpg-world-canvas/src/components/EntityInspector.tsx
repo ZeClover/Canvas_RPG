@@ -20,6 +20,7 @@ import { SceneSection } from "./sections/SceneSection";
 import { SessionSection } from "./sections/SessionSection";
 import { SettlementSection } from "./sections/SettlementSection";
 import { ThemeSection } from "./sections/ThemeSection";
+import { TranscriptSection } from "./sections/TranscriptSection";
 
 interface EntityInspectorProps {
   entity: Entity;
@@ -31,11 +32,12 @@ interface EntityInspectorProps {
   onFocusEntity: (id: string) => void;
   onCreateRelation: (toEntityId: string, type: RelationType) => void;
   onDeleteRelation: (id: string) => void;
+  onCreateEntityFromTranscript: (kind: EntityKind, title: string, summary: string) => void;
 }
 
 const VISIBILITY_LABEL: Record<Visibility, string> = { gm_only: "Só o mestre", revealed: "Revelado aos jogadores", partial: "Parcialmente revelado" };
 
-export function EntityInspector({ entity, allEntities, relations, enabledModules, onUpdate, onClose, onFocusEntity, onCreateRelation, onDeleteRelation }: EntityInspectorProps) {
+export function EntityInspector({ entity, allEntities, relations, enabledModules, onUpdate, onClose, onFocusEntity, onCreateRelation, onDeleteRelation, onCreateEntityFromTranscript }: EntityInspectorProps) {
   const [tags, setTags] = useState(entity.tags.join(", "));
   const [summary, setSummary] = useState(entity.summary);
   const [status, setStatus] = useState(entity.status ?? "");
@@ -181,6 +183,9 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
       {showKindSection && entity.kind === "foreshadowing" && <ForeshadowingSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "creature" && <EcologySection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "rumor" && <RumorSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "transcript" && (
+        <TranscriptSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} onCreateFromSelection={(kind, title, summary) => onCreateEntityFromTranscript(kind, title, summary)} />
+      )}
 
       <div className="size-fields">
         <label>Largura<input value={Math.round(entity.width)} inputMode="numeric" onChange={(event) => onUpdate({ width: Math.max(80, Number(event.target.value) || entity.width) })} /></label>

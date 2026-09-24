@@ -17,7 +17,8 @@ export type ModuleKey =
   | "npc_brain" | "quest_studio" | "session_system" | "timeline"
   | "knowledge_engine" | "mystery_board" | "causality_engine" | "rules_engine"
   | "settlement_engine" | "project_engine" | "economy_engine" | "resource_engine"
-  | "scene_composer" | "theme_foreshadowing" | "ecology_engine" | "rumor_engine";
+  | "scene_composer" | "theme_foreshadowing" | "ecology_engine" | "rumor_engine"
+  | "transcript_engine" | "campaign_health" | "player_knowledge_view";
 
 export interface ModuleConfig {
   key: ModuleKey;
@@ -43,6 +44,9 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   { key: "theme_foreshadowing", label: "Tema & Foreshadowing", description: "Motivos recorrentes e rastreamento de presságios até o pagamento.", phase: 5 },
   { key: "ecology_engine", label: "Encounter Ecology", description: "Perfil ecológico de criaturas: habitat, dieta, comportamento, ameaça.", phase: 5 },
   { key: "rumor_engine", label: "Rumor Engine", description: "Estado de verdade/fonte em rumores, mais o gerador por templates.", phase: 5 },
+  { key: "transcript_engine", label: "Transcrições", description: "Importa TXT/SRT/VTT, busca por palavra-chave e converte trechos em elementos do Canvas.", phase: 6 },
+  { key: "campaign_health", label: "Campaign Health Dashboard", description: "Painel de saúde da campanha: contagens, pistas soltas, recursos críticos, regras desativadas.", phase: 6 },
+  { key: "player_knowledge_view", label: "Player Knowledge View", description: "O que os jogadores sabem oficialmente, a partir da visibilidade de cada elemento.", phase: 6 },
 ];
 
 export const ALL_MODULE_KEYS: ModuleKey[] = MODULE_REGISTRY.map((module) => module.key);
@@ -78,6 +82,7 @@ export const MODULE_FOR_KIND: Partial<Record<EntityKind, ModuleKey>> = {
   foreshadowing: "theme_foreshadowing",
   creature: "ecology_engine",
   rumor: "rumor_engine",
+  transcript: "transcript_engine",
 };
 
 export function isKindSectionEnabled(kind: EntityKind, enabledModules: ModuleKey[]): boolean {

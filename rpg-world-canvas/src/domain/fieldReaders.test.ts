@@ -14,6 +14,7 @@ import { defaultSceneFields, readSceneFields } from "./sceneFields";
 import { defaultSessionFields, readSessionFields } from "./sessionFields";
 import { defaultSettlementFields, readSettlementFields } from "./settlementFields";
 import { defaultThemeFields, readThemeFields } from "./themeFields";
+import { defaultTranscriptFields, readTranscriptFields } from "./transcriptFields";
 
 describe("leitores de campos por tipo", () => {
   it("npc: retorna os padrões para um bag vazio (elemento antigo/sem esses campos)", () => {
@@ -155,5 +156,13 @@ describe("leitores de campos por tipo", () => {
 
   it("rumor: um estado de verdade desconhecido cai no padrão", () => {
     expect(readRumorFields({ truth: "Meio verdade" }).truth).toBe(defaultRumorFields().truth);
+  });
+
+  it("transcrição: retorna os padrões para um bag vazio", () => {
+    expect(readTranscriptFields({})).toEqual(defaultTranscriptFields());
+  });
+
+  it("transcrição: um formato de origem desconhecido cai no padrão", () => {
+    expect(readTranscriptFields({ sourceFormat: "docx" }).sourceFormat).toBe(defaultTranscriptFields().sourceFormat);
   });
 });
