@@ -1,6 +1,6 @@
 @echo off
 setlocal
-title Instalar RPG Canvas Studio v1.1.0
+title Instalar RPG Canvas Studio v1.2.0
 cd /d "%~dp0"
 
 echo ===============================================================

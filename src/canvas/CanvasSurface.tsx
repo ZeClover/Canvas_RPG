@@ -9,12 +9,14 @@ export interface CanvasSurfaceHandle {
   focusRegion: (id: string) => void;
   centerOn: (point: WorldPoint) => void;
   viewportCenter: () => WorldPoint;
+  exportImage: (scope: "viewport" | "all") => string | null;
 }
 
 interface CanvasSurfaceProps {
   store: WorkspaceStore;
   sessionMode: boolean;
   activeSessionId: string | null;
+  focusMode: boolean;
   onCameraChange: (camera: CameraState) => void;
   onEditNode: (id: string, bounds: WorldBounds) => void;
   onCreateNode: (id: string, screen: WorldPoint) => void;
@@ -28,7 +30,7 @@ interface CanvasSurfaceProps {
  * separate React-rendered layer that can drift out of sync during a gesture.
  */
 export const CanvasSurface = forwardRef<CanvasSurfaceHandle, CanvasSurfaceProps>(function CanvasSurface(
-  { store, sessionMode, activeSessionId, onCameraChange, onEditNode, onCreateNode, onContextMenu },
+  { store, sessionMode, activeSessionId, focusMode, onCameraChange, onEditNode, onCreateNode, onContextMenu },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -40,6 +42,7 @@ export const CanvasSurface = forwardRef<CanvasSurfaceHandle, CanvasSurfaceProps>
     focusRegion: (id) => engineRef.current?.focusRegion(id),
     centerOn: (point) => engineRef.current?.centerOn(point),
     viewportCenter: () => engineRef.current?.getViewportCenter() ?? { x: 0, y: 0 },
+    exportImage: (scope) => engineRef.current?.exportImage(scope) ?? null,
   }), []);
 
   useEffect(() => {
@@ -63,6 +66,7 @@ export const CanvasSurface = forwardRef<CanvasSurfaceHandle, CanvasSurfaceProps>
       onCreateConnection: (fromId, toId) => store.createConnection(fromId, toId),
       onEditNode,
       onSessionAdvance: (id) => store.advanceSession(id),
+      onDuplicateNodesInPlace: (ids) => store.duplicateNodesInPlace(ids).map((node) => ({ id: node.id, x: node.x, y: node.y })),
     });
     engineRef.current = engine;
     void engine.init().then(() => {
@@ -91,6 +95,10 @@ export const CanvasSurface = forwardRef<CanvasSurfaceHandle, CanvasSurfaceProps>
   useEffect(() => {
     engineRef.current?.setSessionMode(sessionMode, activeSessionId);
   }, [activeSessionId, sessionMode]);
+
+  useEffect(() => {
+    engineRef.current?.setFocusMode(focusMode);
+  }, [focusMode]);
 
   return <div ref={hostRef} className="canvas-surface" aria-label="Canvas visual da campanha" />;
 });

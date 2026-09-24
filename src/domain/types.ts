@@ -32,6 +32,7 @@ export interface CanvasNode {
   projectId: string;
   regionId: string | null;
   sourceNodeId: string | null;
+  groupId: string | null;
   title: string;
   body: string;
   instanceNotes: string;

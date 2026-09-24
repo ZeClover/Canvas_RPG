@@ -85,8 +85,13 @@ test.describe("Academia Mágica — fluxo visual completo", () => {
 
     expect(savedNode).not.toBeNull();
     expect(savedNode.x).not.toBeCloseTo(-140, 0);
-    expect(savedNode.x).toBeCloseTo(expectedWorldAfter.x - 120, -1);
-    expect(savedNode.y).toBeCloseTo(expectedWorldAfter.y - 63, -1);
+    // A generous tolerance here: the canvas snaps a drag to nearby
+    // alignment guides (edges/centers of other boxes), so the persisted
+    // position can land a little off the raw pointer delta by design —
+    // this assertion is about "the box really moved and was saved", not
+    // pixel-exact arithmetic.
+    expect(Math.abs(savedNode.x - (expectedWorldAfter.x - 120))).toBeLessThan(60);
+    expect(Math.abs(savedNode.y - (expectedWorldAfter.y - 63))).toBeLessThan(60);
 
     const movedX = savedNode.x;
     const movedY = savedNode.y;

@@ -195,6 +195,10 @@ function Workspace({ store, onBack }: { store: WorkspaceStore; onBack: () => voi
   const [exporting, setExporting] = useState(false);
   const [transferMessage, setTransferMessage] = useState("");
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
+  const [focusMode, setFocusMode] = useState(false);
+
+  const canGroup = state.selectedNodeIds.length >= 2;
+  const canUngroup = state.selectedNodeIds.some((id) => state.nodes.find((node) => node.id === id)?.groupId);
 
   const selectedNode = useMemo(
     () => state.selectedNodeIds.length === 1 ? state.nodes.find((node) => node.id === state.selectedNodeIds[0]) ?? null : null,
@@ -216,6 +220,15 @@ function Workspace({ store, onBack }: { store: WorkspaceStore; onBack: () => voi
   }, []);
   const onContextMenu = useCallback((target: CanvasContextTarget) => setContextMenu(target), []);
 
+  function exportImage() {
+    const dataUrl = canvasRef.current?.exportImage("all");
+    if (!dataUrl) return;
+    const anchor = document.createElement("a");
+    anchor.href = dataUrl;
+    anchor.download = `${state.project.title.toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "mapa"}.png`;
+    anchor.click();
+  }
+
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {
       const typing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement;
@@ -234,6 +247,10 @@ function Workspace({ store, onBack }: { store: WorkspaceStore; onBack: () => voi
         event.preventDefault(); store.undo();
       } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "d") {
         event.preventDefault(); store.duplicateSelected();
+      } else if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "g") {
+        event.preventDefault(); store.ungroupSelected();
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "g") {
+        event.preventDefault(); store.groupSelected();
       } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c") {
         store.copySelected();
       } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "v") {
@@ -244,11 +261,20 @@ function Workspace({ store, onBack }: { store: WorkspaceStore; onBack: () => voi
         canvasRef.current?.focusNode(state.selectedNodeIds[0]);
       } else if (event.key === "Home") {
         event.preventDefault(); canvasRef.current?.fitAll();
+      } else if ((event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowRight") && state.selectedNodeIds.length) {
+        event.preventDefault();
+        const step = event.shiftKey ? 10 : 1;
+        const dx = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0;
+        const dy = event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0;
+        const moves = state.nodes
+          .filter((node) => state.selectedNodeIds.includes(node.id))
+          .map((node) => ({ id: node.id, x: node.x + dx, y: node.y + dy }));
+        store.moveNodes(moves);
       }
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [state.selectedNodeIds, store]);
+  }, [state.selectedNodeIds, state.nodes, store]);
 
   useEffect(() => {
     const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
@@ -315,6 +341,7 @@ function Workspace({ store, onBack }: { store: WorkspaceStore; onBack: () => voi
             store={store}
             sessionMode={sessionMode}
             activeSessionId={activeSessionId}
+            focusMode={focusMode}
             onCameraChange={onCameraChange}
             onEditNode={onEditNode}
             onCreateNode={onCreateNode}
@@ -324,6 +351,9 @@ function Workspace({ store, onBack }: { store: WorkspaceStore; onBack: () => voi
         <CanvasToolbar
           selectedCount={state.selectedNodeIds.length}
           hasSelection={state.selectedNodeIds.length > 0 || Boolean(state.selectedRegionId) || Boolean(state.selectedConnectionId)}
+          canGroup={canGroup}
+          canUngroup={canUngroup}
+          focusMode={focusMode}
           onAddNode={() => createAtCenter("node")}
           onAddRegion={() => createAtCenter("region")}
           onAddSession={() => createAtCenter("session")}
@@ -336,9 +366,13 @@ function Workspace({ store, onBack }: { store: WorkspaceStore; onBack: () => voi
           }}
           onOpenTemplates={() => setTemplatePanelOpen(true)}
           onDelete={() => store.deleteSelected()}
+          onGroup={() => store.groupSelected()}
+          onUngroup={() => store.ungroupSelected()}
+          onToggleFocusMode={() => setFocusMode((active) => !active)}
+          onExportImage={exportImage}
         />
         <Minimap state={state} camera={camera} onNavigate={(point) => canvasRef.current?.centerOn(point)} />
-        <div className="canvas-hint">Arraste o fundo para selecionar · Espaço + arrastar move o mapa · Puxe o ponto lateral para conectar</div>
+        <div className="canvas-hint">Arraste o fundo para selecionar · Espaço + arrastar move o mapa · Puxe o ponto lateral para conectar · Alt + arrastar duplica</div>
         {state.selectedNodeIds.length > 1 && <div className="multi-selection-badge">{state.selectedNodeIds.length} caixas selecionadas · arraste uma para mover o conjunto</div>}
         {state.selectedNodeIds.length > 1 && (
           <BulkInspector count={state.selectedNodeIds.length} onUpdate={(updates) => store.updateSelectedNodes(updates)} onClose={() => store.clearSelection()} />

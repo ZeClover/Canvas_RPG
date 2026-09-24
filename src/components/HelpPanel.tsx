@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { WorkspaceData } from "../domain/types";
 import { diagnoseWorkspace } from "../domain/workspaceDiagnostics";
+import { APP_VERSION } from "../version";
 import { Icons } from "./Icons";
 
 export function HelpPanel({ state, onClose }: { state: WorkspaceData; onClose: () => void }) {
@@ -10,12 +11,12 @@ export function HelpPanel({ state, onClose }: { state: WorkspaceData; onClose: (
   return (
     <div className="dialog-backdrop help-backdrop" onMouseDown={onClose}>
       <section className="help-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Ajuda e diagnóstico">
-        <header className="session-panel-heading"><div><span className="eyebrow">RPG CANVAS STUDIO 1.0</span><h2>Central de ajuda</h2></div><button className="icon-button" onClick={onClose} aria-label="Fechar"><Icons.close /></button></header>
+        <header className="session-panel-heading"><div><span className="eyebrow">RPG CANVAS STUDIO {APP_VERSION}</span><h2>Central de ajuda</h2></div><button className="icon-button" onClick={onClose} aria-label="Fechar"><Icons.close /></button></header>
         <div className="help-tabs"><button className={tab === "guide" ? "is-active" : ""} onClick={() => setTab("guide")}>Começar</button><button className={tab === "health" ? "is-active" : ""} onClick={() => setTab("health")}>Diagnóstico {issues.length ? `(${issues.length})` : "✓"}</button></div>
         {tab === "guide" ? (
           <div className="guide-content">
             <ol><li><strong>Crie uma sessão</strong><span>Use o botão Sessão ou um template pronto.</span></li><li><strong>Monte o fluxo</strong><span>Crie caixas e arraste o ponto lateral para conectar.</span></li><li><strong>Narre</strong><span>Inicie a sessão e marque os acontecimentos no canvas.</span></li><li><strong>Feche</strong><span>Abra o roteiro, imprima em PDF e exporte seu projeto.</span></li></ol>
-            <div className="shortcut-grid"><kbd>Ctrl K</kbd><span>Buscar</span><kbd>Ctrl S</kbd><span>Salvar</span><kbd>Ctrl Z</kbd><span>Desfazer</span><kbd>Ctrl D</kbd><span>Duplicar</span><kbd>Home</kbd><span>Ver tudo</span><kbd>Espaço</kbd><span>Mover mapa</span></div>
+            <div className="shortcut-grid"><kbd>Ctrl K</kbd><span>Buscar</span><kbd>Ctrl S</kbd><span>Salvar</span><kbd>Ctrl Z</kbd><span>Desfazer</span><kbd>Ctrl D</kbd><span>Duplicar</span><kbd>Home</kbd><span>Ver tudo</span><kbd>Espaço</kbd><span>Mover mapa</span><kbd>Setas</kbd><span>Mover 1px (Shift = 10px)</span><kbd>Alt + arrastar</kbd><span>Duplicar arrastando</span><kbd>Ctrl G</kbd><span>Agrupar seleção</span><kbd>Ctrl Shift G</kbd><span>Desagrupar</span></div>
           </div>
         ) : (
           <div className="health-content">

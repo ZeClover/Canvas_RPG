@@ -1,8 +1,22 @@
-# RPG Canvas Studio — v1.1.0
+# RPG Canvas Studio — v1.2.0
 
 Aplicativo desktop local-first (Windows, Tauri) para organizar campanhas de RPG visualmente em um canvas infinito, ao estilo Miro/Obsidian Canvas/Milanote.
 
-A versão está visível dentro do próprio app, na barra superior, ao lado do nome do projeto (`Canvas principal · v1.1.0`).
+A versão está visível dentro do próprio app, na barra superior, ao lado do nome do projeto (`Canvas principal · v1.2.0`).
+
+## O que mudou na v1.2.0 — polimento do canvas
+
+Depois da correção arquitetural da v1.1.0 (canvas confirmado funcionando), esta versão adiciona recursos de edição pedidos diretamente para o dia a dia de organizar campanhas — sempre local, sem depender de servidor:
+
+- **Guias de alinhamento (snap)** — ao arrastar uma caixa, ela encaixa automaticamente quando uma borda ou o centro se alinha com outra caixa próxima, com uma linha guia azul mostrando o alinhamento.
+- **Mover com o teclado** — setas movem a seleção 1px por vez (`Shift+seta` move 10px), para ajustes finos sem o mouse.
+- **Alt + arrastar duplica** — segurar Alt e arrastar uma caixa (ou grupo) cria uma cópia no lugar e já continua o arraste com a cópia; o original não se move.
+- **Agrupamento leve** (`Ctrl+G` / `Ctrl+Shift+G`) — várias caixas podem ser agrupadas para mover sempre juntas, sem o peso visual de uma região (sem preenchimento, sem cabeçalho, só um contorno tracejado sutil). Clicar em qualquer membro seleciona o grupo inteiro.
+- **Exportar como imagem** — botão "Imagem" na barra do canvas gera um PNG do mapa inteiro (não só o que está visível na tela).
+- **Modo foco** — botão "Foco" realça toda a cadeia de caixas conectadas à seleção (percorrendo as conexões, não só o vizinho direto) e escurece o resto do mapa.
+- **Ícone por tipo de caixa** — cada caixa mostra um pequeno ícone (🎬 cena, 🧑 NPC, ⚔️ combate, etc.), além da cor, para identificar o tipo num relance.
+- **Setas diferentes por tipo de conexão** — fluxo é uma seta sólida cheia, condição é uma linha tracejada com ponta em losango, referência é pontilhada com um círculo vazado na ponta — dá para diferenciar o tipo de conexão sem precisar clicar nela.
+- **Seletor de cores com paleta** — todas as caixas (que antes não tinham cor editável no inspetor!), regiões e conexões agora usam o mesmo seletor: uma paleta de cores predefinidas + um campo de cor personalizada.
 
 ## O que mudou na v1.1.0 — correção arquitetural do canvas
 
@@ -59,8 +73,8 @@ No Windows: `INSTALAR.bat` primeiro, depois `ABRIR_DEV.bat` (modo desenvolviment
 
 ```
 src-tauri\target\release\RPG Canvas Studio.exe                                   (executável portátil)
-src-tauri\target\release\bundle\nsis\RPG Canvas Studio_1.1.0_x64-setup.exe       (instalador NSIS)
-src-tauri\target\release\bundle\msi\RPG Canvas Studio_1.1.0_x64_en-US.msi        (instalador MSI)
+src-tauri\target\release\bundle\nsis\RPG Canvas Studio_1.2.0_x64-setup.exe       (instalador NSIS)
+src-tauri\target\release\bundle\msi\RPG Canvas Studio_1.2.0_x64_en-US.msi        (instalador MSI)
 ```
 
 Se `link.exe` não for encontrado e o Visual Studio Build Tools não estiver instalado, `BUILD_WINDOWS.bat` para **antes** de iniciar a compilação e mostra:
@@ -72,7 +86,7 @@ winget install --id Microsoft.VisualStudio.2022.BuildTools -e --override "--wait
 ## Testes
 
 ```bash
-npm test           # 52 testes automatizados (Vitest)
+npm test           # 58 testes automatizados (Vitest)
 npm run build      # TypeScript estrito + build de produção (Vite)
 npx playwright install chromium   # uma vez, para baixar o navegador de teste
 npm run test:e2e   # teste visual/end-to-end (Playwright)
@@ -80,8 +94,8 @@ npm run test:e2e   # teste visual/end-to-end (Playwright)
 
 ### Resultado dos testes (ambiente de desenvolvimento Linux)
 
-- **52/52 testes unitários e de integração aprovados** (`npm test`), cobrindo:
-  câmera/viewport começando em `0×0`/`1×1` e recebendo tamanho real depois; `fitAll()` acionado só após o `ResizeObserver`; importação do arquivo de exemplo `Academia-Magica.rpgcanvas` com a contagem exata de 22 caixas / 9 regiões / 11 conexões; arrastar uma caixa e confirmar a mudança de coordenadas via callback; redimensionar uma caixa; seleção múltipla por caixa de seleção; movimento em grupo; criação de conexão pela alça; seleção de conexão por clique; zoom ancorado no cursor; pan; redimensionar a janela sem perder a posição da câmera; clique no minimapa navegando para o ponto certo; região com elementos filhos se movendo junto (nível de domínio); undo/redo de movimentação (nível de domínio); caixa permanecendo clicável em zoom bem distante (overview); cancelamento de gesto com `Esc`.
+- **58/58 testes unitários e de integração aprovados** (`npm test`), cobrindo:
+  câmera/viewport começando em `0×0`/`1×1` e recebendo tamanho real depois; `fitAll()` acionado só após o `ResizeObserver`; importação do arquivo de exemplo `Academia-Magica.rpgcanvas` com a contagem exata de 22 caixas / 9 regiões / 11 conexões; arrastar uma caixa e confirmar a mudança de coordenadas via callback; redimensionar uma caixa; seleção múltipla por caixa de seleção; movimento em grupo; criação de conexão pela alça; seleção de conexão por clique; zoom ancorado no cursor; pan; redimensionar a janela sem perder a posição da câmera; clique no minimapa navegando para o ponto certo; região com elementos filhos se movendo junto (nível de domínio); undo/redo de movimentação (nível de domínio); caixa permanecendo clicável em zoom bem distante (overview); cancelamento de gesto com `Esc`; clicar numa caixa agrupada seleciona e arrasta o grupo inteiro; Alt+arrastar duplica sem mover o original; arrastar perto do alinhamento de outra caixa encaixa a posição; agrupar/desagrupar sem virar região; importação de um arquivo salvo antes de existir agrupamento (compatibilidade retroativa).
 - **TypeScript estrito (`tsc -b`) sem erros.**
 - **Build de produção (Vite) concluída com sucesso**, bundle sem `pixi.js` (redução de tamanho no chunk principal).
 - **Teste visual/end-to-end (Playwright) aprovado**: abre o app, importa `examples/Academia-Magica.rpgcanvas`, clica numa caixa real, arrasta com eventos de ponteiro reais do navegador, tira screenshot antes/depois, confirma que a caixa mudou de posição (com as conexões acompanhando visualmente), espera o autosave, recarrega a página do zero, reabre o projeto pela lista e confirma que a nova posição foi persistida. Screenshots em `test-results/academia-magica-before-drag.png` e `academia-magica-after-drag.png` após rodar `npm run test:e2e`.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { imageFileToDataUrl, normalizeExternalImageUrl } from "../data/imageProcessing";
 import { NODE_KIND_LABELS, type CanvasNode, type NodeKind } from "../domain/types";
+import { ColorPicker } from "./ColorPicker";
 import { Icons } from "./Icons";
 
 interface NodeInspectorProps {
@@ -40,6 +41,10 @@ export function NodeInspector({ node, onUpdate, onClose }: NodeInspectorProps) {
         <select value={node.kind} onChange={(event) => onUpdate({ kind: event.target.value as NodeKind })}>
           {Object.entries(NODE_KIND_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
         </select>
+      </label>
+      <label>
+        Cor
+        <ColorPicker value={node.color} onChange={(color) => onUpdate({ color })} />
       </label>
       <label>
         Conteúdo

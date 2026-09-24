@@ -3,7 +3,7 @@ import type { CanvasNode } from "./types";
 import { applyNodeRenderBudget } from "./renderBudget";
 
 function node(id: string, x: number, important = false): CanvasNode {
-  return { id, projectId: "p", regionId: null, sourceNodeId: null, title: id, body: "", instanceNotes: "", kind: "free", x, y: 0, width: 200, height: 100, color: "#111", imageSrc: null, tags: [], important, createdAt: 0, updatedAt: 0 };
+  return { id, projectId: "p", regionId: null, sourceNodeId: null, groupId: null, title: id, body: "", instanceNotes: "", kind: "free", x, y: 0, width: 200, height: 100, color: "#111", imageSrc: null, tags: [], important, createdAt: 0, updatedAt: 0 };
 }
 
 describe("orçamento de renderização", () => {

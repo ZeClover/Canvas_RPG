@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-title Compilar RPG Canvas Studio v1.1.0
+title Compilar RPG Canvas Studio v1.2.0
 cd /d "%~dp0"
 
 echo ===============================================================
@@ -157,10 +157,10 @@ echo Executavel portatil:
 echo   %cd%\src-tauri\target\release\RPG Canvas Studio.exe
 echo.
 echo Instalador NSIS:
-echo   %cd%\src-tauri\target\release\bundle\nsis\RPG Canvas Studio_1.1.0_x64-setup.exe
+echo   %cd%\src-tauri\target\release\bundle\nsis\RPG Canvas Studio_1.2.0_x64-setup.exe
 echo.
 echo Instalador MSI:
-echo   %cd%\src-tauri\target\release\bundle\msi\RPG Canvas Studio_1.1.0_x64_en-US.msi
+echo   %cd%\src-tauri\target\release\bundle\msi\RPG Canvas Studio_1.2.0_x64_en-US.msi
 echo.
 pause
 exit /b 0

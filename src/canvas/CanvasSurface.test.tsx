@@ -13,6 +13,7 @@ describe("CanvasSurface", () => {
         store={store}
         sessionMode={false}
         activeSessionId={null}
+        focusMode={false}
         onCameraChange={() => undefined}
         onEditNode={() => undefined}
         onCreateNode={() => undefined}

@@ -26,6 +26,7 @@ function makeContext2DStub(): CanvasRenderingContext2D {
     scale: noop,
     translate: noop,
     rotate: noop,
+    setLineDash: noop,
     measureText: () => ({ width: 10 }) as TextMetrics,
     fillStyle: "#000",
     strokeStyle: "#000",

@@ -1,6 +1,6 @@
 [package]
 name = "rpg-canvas-studio"
-version = "1.1.0"
+version = "1.2.0"
 description = "Canvas visual local-first para campanhas de RPG"
 authors = ["Zé Clover"]
 edition = "2021"

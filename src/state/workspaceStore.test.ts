@@ -129,4 +129,33 @@ describe("WorkspaceStore", () => {
     store.undo();
     expect(store.getSnapshot().nodes.find((node) => node.id === first.id)?.kind).toBe(first.kind);
   });
+
+  it("agrupa e desagrupa uma seleção sem virar região", () => {
+    const store = new WorkspaceStore(createDemoWorkspace());
+    const [first, second] = store.getSnapshot().nodes;
+    store.selectNodes([first.id, second.id]);
+    store.groupSelected();
+    const grouped = store.getSnapshot().nodes.filter((node) => node.id === first.id || node.id === second.id);
+    expect(grouped[0].groupId).not.toBeNull();
+    expect(grouped[0].groupId).toBe(grouped[1].groupId);
+    expect(store.getSnapshot().regions).toHaveLength(store.getSnapshot().regions.length);
+
+    store.ungroupSelected();
+    const ungrouped = store.getSnapshot().nodes.filter((node) => node.id === first.id || node.id === second.id);
+    expect(ungrouped.every((node) => node.groupId === null)).toBe(true);
+  });
+
+  it("duplica caixas no lugar preservando o agrupamento entre as cópias", () => {
+    const store = new WorkspaceStore(createDemoWorkspace());
+    const [first, second] = store.getSnapshot().nodes;
+    const copies = store.duplicateNodesInPlace([first.id, second.id]);
+    expect(copies).toHaveLength(2);
+    expect(copies[0].x).toBe(first.x);
+    expect(copies[0].y).toBe(first.y);
+    expect(copies[0].id).not.toBe(first.id);
+    expect(copies[0].groupId).not.toBeNull();
+    expect(copies[0].groupId).toBe(copies[1].groupId);
+    // Originals are untouched.
+    expect(store.getSnapshot().nodes.find((node) => node.id === first.id)).toMatchObject({ x: first.x, y: first.y });
+  });
 });

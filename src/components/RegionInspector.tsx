@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CanvasRegion, RegionKind } from "../domain/types";
+import { ColorPicker } from "./ColorPicker";
 import { Icons } from "./Icons";
 
 interface RegionInspectorProps {
@@ -47,17 +48,9 @@ export function RegionInspector({ region, onUpdate, onClose }: RegionInspectorPr
           {Object.entries(REGION_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
       </label>
-      <label className="color-field">
+      <label>
         Cor
-        <span>
-          <input
-            type="color"
-            value={color}
-            onChange={(event) => setColor(event.target.value)}
-            onBlur={() => color !== region.color && onUpdate({ color })}
-          />
-          {color}
-        </span>
+        <ColorPicker value={color} onChange={(next) => { setColor(next); onUpdate({ color: next }); }} />
       </label>
       <div className="size-fields">
         <label>

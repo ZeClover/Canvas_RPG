@@ -158,6 +158,7 @@ export class WorkspaceStore {
       projectId: this.state.project.id,
       regionId: resolvedRegionId,
       sourceNodeId: null,
+      groupId: null,
       title,
       body: "",
       instanceNotes: "",
@@ -230,7 +231,7 @@ export class WorkspaceStore {
     }));
     const nodes: CanvasNode[] = template.nodes.map((node) => ({
       id: nodeIds.get(node.key)!, projectId: this.state.project.id,
-      regionId: node.regionKey ? regionIds.get(node.regionKey) ?? null : null, sourceNodeId: null,
+      regionId: node.regionKey ? regionIds.get(node.regionKey) ?? null : null, sourceNodeId: null, groupId: null,
       title: node.title, body: node.body, instanceNotes: node.instanceNotes, kind: node.kind,
       x: node.x + offsetX, y: node.y + offsetY, width: node.width, height: node.height,
       color: node.color, imageSrc: node.imageSrc, tags: [...(node.tags ?? [])], important: node.important, createdAt: now, updatedAt: now,
@@ -470,7 +471,7 @@ export class WorkspaceStore {
     const pasted = this.clipboard.map((node) => {
       const id = createId("node");
       idMap.set(node.id, id);
-      return { ...node, id, x: node.x + offset, y: node.y + offset, createdAt: now, updatedAt: now };
+      return { ...node, id, groupId: null, x: node.x + offset, y: node.y + offset, createdAt: now, updatedAt: now };
     });
     this.clipboard = structuredClone(pasted);
     this.commit((state) => ({
@@ -483,6 +484,57 @@ export class WorkspaceStore {
   duplicateSelected(): void {
     this.copySelected();
     this.pasteClipboard();
+  }
+
+  groupSelected(): void {
+    const ids = new Set(this.state.selectedNodeIds);
+    if (ids.size < 2) return;
+    const groupId = createId("group");
+    const now = Date.now();
+    this.commit((state) => ({
+      ...state,
+      nodes: state.nodes.map((node) => (ids.has(node.id) ? { ...node, groupId, updatedAt: now } : node)),
+    }));
+  }
+
+  ungroupSelected(): void {
+    const ids = this.state.selectedNodeIds;
+    const groupIds = new Set(this.state.nodes.filter((node) => ids.includes(node.id) && node.groupId).map((node) => node.groupId));
+    if (!groupIds.size) return;
+    const now = Date.now();
+    this.commit((state) => ({
+      ...state,
+      nodes: state.nodes.map((node) => (node.groupId && groupIds.has(node.groupId) ? { ...node, groupId: null, updatedAt: now } : node)),
+    }));
+  }
+
+  /**
+   * Duplicates the given nodes at their exact current position (no offset)
+   * and returns the copies, so the caller (the canvas engine's Alt+drag
+   * gesture) can immediately continue the same pointer gesture moving the
+   * new copies instead of the originals. The copies share a fresh group id
+   * among themselves when two or more are duplicated together.
+   */
+  duplicateNodesInPlace(ids: string[]): CanvasNode[] {
+    const sourceNodes = this.state.nodes.filter((node) => ids.includes(node.id));
+    if (!sourceNodes.length) return [];
+    const now = Date.now();
+    const groupId = sourceNodes.length > 1 ? createId("group") : null;
+    const copies: CanvasNode[] = sourceNodes.map((node) => ({
+      ...node,
+      id: createId("node"),
+      groupId,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    this.commit((state) => ({
+      ...state,
+      nodes: [...state.nodes, ...copies],
+      selectedNodeIds: copies.map((node) => node.id),
+      selectedRegionId: null,
+      selectedConnectionId: null,
+    }));
+    return copies;
   }
 
   advanceSession(nodeId: string): void {

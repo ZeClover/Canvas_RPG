@@ -108,6 +108,10 @@ function parseNode(value: unknown): CanvasNode {
     projectId: string(source.projectId, "Projeto da caixa", 200),
     regionId: nullableString(source.regionId, "Região da caixa", 200),
     sourceNodeId: nullableString(source.sourceNodeId, "Referência da caixa", 200),
+    // Absent in files saved before v1.2.0 (groups didn't exist yet) —
+    // treat a missing field the same as no group, unlike a field that is
+    // present but malformed.
+    groupId: source.groupId === undefined ? null : nullableString(source.groupId, "Grupo da caixa", 200),
     title: string(source.title, "Título da caixa", 2_000),
     body: string(source.body, "Conteúdo da caixa", 1_000_000),
     instanceNotes: string(source.instanceNotes, "Notas da caixa", 1_000_000),

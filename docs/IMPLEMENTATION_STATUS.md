@@ -1,4 +1,4 @@
-# Estado da implementação — v1.1.0
+# Estado da implementação — v1.2.0
 
 ## Funcional
 

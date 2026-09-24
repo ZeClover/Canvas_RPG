@@ -36,19 +36,21 @@ function makeCallbacks(): CanvasEngineCallbacks {
     onCreateConnection: vi.fn(),
     onEditNode: vi.fn(),
     onSessionAdvance: vi.fn(),
+    onDuplicateNodesInPlace: vi.fn().mockReturnValue([]),
   };
 }
 
 function firePointer(
   target: EventTarget,
   type: string,
-  init: { x: number; y: number; button?: number; shiftKey?: boolean; pointerId?: number },
+  init: { x: number; y: number; button?: number; shiftKey?: boolean; altKey?: boolean; pointerId?: number },
 ): void {
   const event = new MouseEvent(type, {
     clientX: init.x,
     clientY: init.y,
     button: init.button ?? 0,
     shiftKey: init.shiftKey ?? false,
+    altKey: init.altKey ?? false,
     bubbles: true,
     cancelable: true,
   });
@@ -126,8 +128,11 @@ describe("CanvasEngine", () => {
   });
 
   it("arrastar uma caixa reporta a nova posição via onMoveNodes", async () => {
-    const state = makeState();
-    const node = state.nodes[0];
+    const base = makeState();
+    const node = base.nodes[0];
+    // Isolated from every other node so the new alignment-snap feature has
+    // nothing nearby to snap against — this test is about the raw delta.
+    const state = { ...base, nodes: [node] };
     const { engine, canvas, callbacks } = await createEngine(state);
 
     const start = engine.worldToScreen({ x: node.x + node.width / 2, y: node.y + node.height / 2 });
@@ -148,9 +153,11 @@ describe("CanvasEngine", () => {
   });
 
   it("mover uma seleção múltipla move todas as caixas selecionadas juntas", async () => {
-    const state = makeState();
-    const [a, b] = state.nodes;
-    const selectedState = { ...state, selectedNodeIds: [a.id, b.id] };
+    const base = makeState();
+    const [a, b] = base.nodes;
+    // Isolated from every other node so the alignment-snap feature has
+    // nothing nearby to snap against — this test is about the raw delta.
+    const selectedState = { ...base, nodes: [a, b], selectedNodeIds: [a.id, b.id] };
     const { engine, canvas, callbacks } = await createEngine(selectedState);
 
     const start = engine.worldToScreen({ x: a.x + a.width / 2, y: a.y + a.height / 2 });
@@ -295,6 +302,76 @@ describe("CanvasEngine", () => {
     firePointer(window, "pointerup", { x: target.x, y: target.y });
 
     expect(callbacks.onCreateConnection).not.toHaveBeenCalled();
+  });
+
+  it("clicar em uma caixa agrupada seleciona e arrasta o grupo inteiro", async () => {
+    const base = makeState();
+    const [a, b] = base.nodes;
+    const groupId = "group_test";
+    const nodes = base.nodes.map((node) =>
+      node.id === a.id || node.id === b.id ? { ...node, groupId } : node,
+    );
+    const state = { ...base, nodes: [nodes[0], nodes[1]] };
+    const { engine, canvas, callbacks } = await createEngine(state);
+
+    const start = engine.worldToScreen({ x: a.x + a.width / 2, y: a.y + a.height / 2 });
+    firePointer(canvas, "pointerdown", { x: start.x, y: start.y });
+    expect(callbacks.onSelectNodes).toHaveBeenCalledWith([a.id, b.id], false);
+
+    engine.setState({ ...state, selectedNodeIds: [a.id, b.id] });
+    firePointer(canvas, "pointerdown", { x: start.x, y: start.y });
+    const moved = engine.worldToScreen({ x: a.x + a.width / 2 + 200, y: a.y + a.height / 2 + 150 });
+    firePointer(canvas, "pointermove", { x: moved.x, y: moved.y });
+    firePointer(window, "pointerup", { x: moved.x, y: moved.y });
+
+    expect(callbacks.onMoveNodes).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        { id: a.id, x: a.x + 200, y: a.y + 150 },
+        { id: b.id, x: b.x + 200, y: b.y + 150 },
+      ]),
+    );
+  });
+
+  it("Alt+arrastar duplica a caixa em vez de movê-la", async () => {
+    const base = makeState();
+    const node = base.nodes[0];
+    const state = { ...base, nodes: [node] };
+    const { engine, canvas, callbacks } = await createEngine(state);
+    const duplicated = { id: "node_copy", x: node.x, y: node.y };
+    (callbacks.onDuplicateNodesInPlace as ReturnType<typeof vi.fn>).mockReturnValue([duplicated]);
+
+    const start = engine.worldToScreen({ x: node.x + node.width / 2, y: node.y + node.height / 2 });
+    firePointer(canvas, "pointerdown", { x: start.x, y: start.y, altKey: true });
+    expect(callbacks.onDuplicateNodesInPlace).toHaveBeenCalledWith([node.id]);
+
+    const moved = engine.worldToScreen({ x: node.x + node.width / 2 + 90, y: node.y + node.height / 2 + 40 });
+    firePointer(canvas, "pointermove", { x: moved.x, y: moved.y });
+    firePointer(window, "pointerup", { x: moved.x, y: moved.y });
+
+    // Only the copy moves; the original is never touched by onMoveNodes.
+    expect(callbacks.onMoveNodes).toHaveBeenCalledWith([{ id: "node_copy", x: node.x + 90, y: node.y + 40 }]);
+    expect(callbacks.onSelectNode).not.toHaveBeenCalled();
+  });
+
+  it("arrastar perto do alinhamento de outra caixa encaixa a posição (snap)", async () => {
+    const base = makeState();
+    const [a, b] = base.nodes;
+    const anchor = { ...b, x: a.x + 400, y: a.y + 3 }; // top edge 3 world units from a's top edge
+    const state = { ...base, nodes: [a, anchor] };
+    const { engine, canvas, callbacks } = await createEngine(state);
+
+    const start = engine.worldToScreen({ x: a.x + a.width / 2, y: a.y + a.height / 2 });
+    firePointer(canvas, "pointerdown", { x: start.x, y: start.y });
+    engine.setState({ ...state, selectedNodeIds: [a.id] });
+    firePointer(canvas, "pointerdown", { x: start.x, y: start.y });
+    // Drag mostly sideways with only a tiny vertical nudge — close enough
+    // to anchor's top edge (3 units away) that the snap should pull it
+    // exactly onto that edge instead of leaving the raw 1px offset.
+    const moved = engine.worldToScreen({ x: a.x + a.width / 2 + 60, y: a.y + a.height / 2 + 1 });
+    firePointer(canvas, "pointermove", { x: moved.x, y: moved.y });
+    firePointer(window, "pointerup", { x: moved.x, y: moved.y });
+
+    expect(callbacks.onMoveNodes).toHaveBeenCalledWith([{ id: a.id, x: a.x + 60, y: anchor.y }]);
   });
 });
 

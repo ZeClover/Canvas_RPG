@@ -27,6 +27,7 @@ export interface CanvasEngineCallbacks {
   onCreateConnection: (fromId: string, toId: string) => void;
   onEditNode: (id: string, screenBounds: WorldBounds) => void;
   onSessionAdvance: (id: string) => void;
+  onDuplicateNodesInPlace: (ids: string[]) => Array<{ id: string; x: number; y: number }>;
 }
 
 export interface CanvasContextTarget {
@@ -88,6 +89,25 @@ const TYPE_COLORS: Record<CanvasNode["kind"], string> = {
   transition: "#94a3b8",
 };
 
+const TYPE_ICONS: Record<CanvasNode["kind"], string> = {
+  free: "✎",
+  scene: "🎬",
+  speech: "💬",
+  npc: "🧑",
+  event: "⚡",
+  decision: "🔀",
+  condition: "❓",
+  combat: "⚔️",
+  clue: "🔍",
+  improv: "🎲",
+  lore: "📖",
+  place: "📍",
+  item: "🎒",
+  creature: "🐾",
+  faction: "🚩",
+  transition: "🔁",
+};
+
 const NODE_MIN_WIDTH = 140;
 const NODE_MAX_WIDTH = 900;
 const NODE_MIN_HEIGHT = 76;
@@ -136,6 +156,11 @@ export class CanvasEngine {
   private initialFitDone = false;
   private cameraAnimationId = 0;
   private imageCache = new Map<string, HTMLImageElement>();
+  private focusMode = false;
+  private focusReachable: Set<string> | null = null;
+  private focusRelatedRegions: Set<string> | null = null;
+  private snapGuideX: number | null = null;
+  private snapGuideY: number | null = null;
 
   constructor(host: HTMLElement, callbacks: CanvasEngineCallbacks) {
     this.host = host;
@@ -296,7 +321,27 @@ export class CanvasEngine {
         if (this.nodeIsInActiveSession(hitNode)) this.callbacks.onSessionAdvance(hitNode.id);
         return;
       }
-      this.callbacks.onSelectNode(hitNode.id, Boolean(event.shiftKey));
+
+      if (event.altKey) {
+        // Alt+drag: duplicate the current selection (or the node/group under
+        // the cursor) in place, then immediately continue this same pointer
+        // gesture dragging the copies — the originals never move.
+        const sourceIds =
+          this.groupMembersOf(hitNode) ?? (this.state.selectedNodeIds.includes(hitNode.id) ? this.state.selectedNodeIds : [hitNode.id]);
+        const copies = this.callbacks.onDuplicateNodesInPlace(sourceIds);
+        if (copies.length) {
+          const positions = new Map(copies.map((copy) => [copy.id, { x: copy.x, y: copy.y }]));
+          this.drag = { pointerStart: world, positions, dx: 0, dy: 0 };
+        }
+        return;
+      }
+
+      const groupMembers = this.groupMembersOf(hitNode);
+      if (groupMembers && !event.shiftKey) {
+        this.callbacks.onSelectNodes(groupMembers, false);
+      } else {
+        this.callbacks.onSelectNode(hitNode.id, Boolean(event.shiftKey));
+      }
       if (!this.state.selectedNodeIds.includes(hitNode.id)) return;
       const positions = new Map(
         this.state.nodes
@@ -371,8 +416,11 @@ export class CanvasEngine {
       return;
     }
     if (this.drag) {
-      this.drag.dx = world.x - this.drag.pointerStart.x;
-      this.drag.dy = world.y - this.drag.pointerStart.y;
+      const rawDx = world.x - this.drag.pointerStart.x;
+      const rawDy = world.y - this.drag.pointerStart.y;
+      const snapped = this.computeDragSnap(rawDx, rawDy, this.drag.positions);
+      this.drag.dx = snapped.dx;
+      this.drag.dy = snapped.dy;
       this.render();
       return;
     }
@@ -472,6 +520,8 @@ export class CanvasEngine {
     if (this.drag) {
       const { positions, dx, dy } = this.drag;
       this.drag = null;
+      this.snapGuideX = null;
+      this.snapGuideY = null;
       if (commit && (dx !== 0 || dy !== 0)) {
         this.callbacks.onMoveNodes([...positions].map(([id, position]) => ({ id, x: position.x + dx, y: position.y + dy })));
       }
@@ -545,6 +595,66 @@ export class CanvasEngine {
   };
 
   // ---- geometry & hit testing -------------------------------------------------
+
+  private groupMembersOf(node: CanvasNode): string[] | null {
+    if (!node.groupId || !this.state) return null;
+    const members = this.state.nodes.filter((candidate) => candidate.groupId === node.groupId).map((candidate) => candidate.id);
+    return members.length > 1 ? members : null;
+  }
+
+  /** Snaps the in-progress drag so the dragged selection's edges/centers
+   * align with any other node's edges/centers within a small screen-space
+   * threshold, and records which guide lines to draw. */
+  private computeDragSnap(dx: number, dy: number, positions: Map<string, WorldPoint>): { dx: number; dy: number } {
+    this.snapGuideX = null;
+    this.snapGuideY = null;
+    if (!this.state) return { dx, dy };
+    const draggedIds = new Set(positions.keys());
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const [id, position] of positions) {
+      const node = this.nodeById.get(id);
+      if (!node) continue;
+      minX = Math.min(minX, position.x + dx);
+      maxX = Math.max(maxX, position.x + dx + node.width);
+      minY = Math.min(minY, position.y + dy);
+      maxY = Math.max(maxY, position.y + dy + node.height);
+    }
+    if (!Number.isFinite(minX)) return { dx, dy };
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const threshold = 8 / Math.max(this.camera.scale, 0.1);
+    let bestDx = 0;
+    let bestDxDist = threshold;
+    let bestDy = 0;
+    let bestDyDist = threshold;
+    for (const node of this.state.nodes) {
+      if (draggedIds.has(node.id)) continue;
+      for (const target of [node.x, node.x + node.width / 2, node.x + node.width]) {
+        for (const source of [minX, centerX, maxX]) {
+          const dist = Math.abs(source - target);
+          if (dist < bestDxDist) {
+            bestDxDist = dist;
+            bestDx = target - source;
+            this.snapGuideX = target;
+          }
+        }
+      }
+      for (const target of [node.y, node.y + node.height / 2, node.y + node.height]) {
+        for (const source of [minY, centerY, maxY]) {
+          const dist = Math.abs(source - target);
+          if (dist < bestDyDist) {
+            bestDyDist = dist;
+            bestDy = target - source;
+            this.snapGuideY = target;
+          }
+        }
+      }
+    }
+    return { dx: dx + bestDx, dy: dy + bestDy };
+  }
 
   private effectiveNodeBounds(node: CanvasNode): WorldBounds {
     if (this.resize && this.resize.id === node.id) {
@@ -791,6 +901,52 @@ export class CanvasEngine {
     this.render();
   }
 
+  setFocusMode(active: boolean): void {
+    this.focusMode = active;
+    this.render();
+  }
+
+  private computeFocusReachable(): Set<string> | null {
+    if (!this.state) return null;
+    const seeds = new Set<string>(this.state.selectedNodeIds);
+    if (this.state.selectedConnectionId) {
+      const edge = this.state.connections.find((candidate) => candidate.id === this.state!.selectedConnectionId);
+      if (edge) {
+        seeds.add(edge.fromNodeId);
+        seeds.add(edge.toNodeId);
+      }
+    }
+    if (!seeds.size) return null;
+    const visited = new Set(seeds);
+    const queue = [...seeds];
+    while (queue.length) {
+      const id = queue.shift()!;
+      for (const edge of this.edgesByNodeId.get(id) ?? []) {
+        const otherId = edge.fromNodeId === id ? edge.toNodeId : edge.fromNodeId;
+        if (!visited.has(otherId)) {
+          visited.add(otherId);
+          queue.push(otherId);
+        }
+      }
+    }
+    return visited;
+  }
+
+  private updateFocusReachability(): void {
+    this.focusReachable = this.focusMode ? this.computeFocusReachable() : null;
+    this.focusRelatedRegions = null;
+    if (!this.focusReachable || !this.state) return;
+    const related = new Set<string>();
+    for (const nodeId of this.focusReachable) {
+      let regionId = this.nodeById.get(nodeId)?.regionId ?? null;
+      while (regionId) {
+        related.add(regionId);
+        regionId = this.state.regions.find((region) => region.id === regionId)?.parentRegionId ?? null;
+      }
+    }
+    this.focusRelatedRegions = related;
+  }
+
   private render(): void {
     const ctx = this.ctx;
     if (!ctx || !this.state) return;
@@ -801,7 +957,17 @@ export class CanvasEngine {
 
     const viewport = cameraWorldBounds(this.camera, 420);
     const lod = semanticLod(this.camera.scale);
+    this.updateFocusReachability();
+    this.paintScene(ctx, viewport, lod);
+    this.drawInteractionOverlay(ctx);
+  }
 
+  /** The static map itself — grid, regions, edges, nodes — with no selection
+   * or in-progress-gesture overlay. Shared between the live render loop and
+   * `exportImage`, which paints the same scene onto an offscreen canvas
+   * under a temporary camera. */
+  private paintScene(ctx: CanvasRenderingContext2D, viewport: WorldBounds, lod: string): void {
+    if (!this.state) return;
     this.drawGrid(ctx, viewport);
 
     const visibleRegions = this.state.regions.filter((region) => intersects(viewport, this.effectiveRegionBounds(region)));
@@ -819,11 +985,56 @@ export class CanvasEngine {
       for (const edge of edges.values()) this.drawEdge(ctx, edge, lod);
     }
 
+    if (lod !== "overview") this.drawGroups(ctx);
+
     // Every node stays visible at every zoom level — LOD only changes how
     // much detail is drawn inside the box, never whether it exists on screen.
     for (const node of visibleNodes) this.drawNode(ctx, node, lod);
+  }
 
-    this.drawInteractionOverlay(ctx);
+  /**
+   * Renders the map to a PNG data URL. "viewport" reuses exactly what is on
+   * screen right now (no redraw needed); "all" fits the entire content into
+   * an offscreen canvas under a temporary camera, then restores the live
+   * camera — the visible canvas itself is never touched.
+   */
+  exportImage(scope: "viewport" | "all"): string | null {
+    if (!this.state) return null;
+    if (scope === "viewport") return this.canvas.toDataURL("image/png");
+
+    const bounds = collectBounds(this.state.nodes, this.state.regions);
+    const padding = 120;
+    const safeWidth = Math.max(1, bounds.width + padding * 2);
+    const safeHeight = Math.max(1, bounds.height + padding * 2);
+    const maxEdge = 4000;
+    const scale = Math.min(maxEdge / safeWidth, maxEdge / safeHeight, 2);
+    const outputWidth = Math.max(1, Math.round(safeWidth * scale));
+    const outputHeight = Math.max(1, Math.round(safeHeight * scale));
+
+    const offscreen = document.createElement("canvas");
+    offscreen.width = outputWidth;
+    offscreen.height = outputHeight;
+    const ctx = offscreen.getContext("2d");
+    if (!ctx) return null;
+
+    const exportCamera: CameraState = {
+      scale,
+      x: -bounds.x * scale + padding * scale,
+      y: -bounds.y * scale + padding * scale,
+      viewportWidth: outputWidth,
+      viewportHeight: outputHeight,
+    };
+
+    ctx.fillStyle = "#0a0d14";
+    ctx.fillRect(0, 0, outputWidth, outputHeight);
+    ctx.setTransform(exportCamera.scale, 0, 0, exportCamera.scale, exportCamera.x, exportCamera.y);
+
+    const previousCamera = this.camera;
+    this.camera = exportCamera;
+    this.paintScene(ctx, cameraWorldBounds(exportCamera, 50), semanticLod(exportCamera.scale));
+    this.camera = previousCamera;
+
+    return offscreen.toDataURL("image/png");
   }
 
   private drawGrid(ctx: CanvasRenderingContext2D, viewport: WorldBounds): void {
@@ -847,17 +1058,18 @@ export class CanvasEngine {
   private drawRegion(ctx: CanvasRenderingContext2D, region: CanvasRegion, lod: string): void {
     const bounds = this.effectiveRegionBounds(region);
     const selected = this.state?.selectedRegionId === region.id;
+    const dim = this.focusRelatedRegions && !this.focusRelatedRegions.has(region.id) ? 0.3 : 1;
     ctx.save();
-    ctx.globalAlpha = region.kind === "session" ? 0.08 : 0.055;
+    ctx.globalAlpha = (region.kind === "session" ? 0.08 : 0.055) * dim;
     ctx.fillStyle = region.color;
     ctx.beginPath();
     ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 24);
     ctx.fill();
-    ctx.globalAlpha = selected ? 0.95 : 0.58;
+    ctx.globalAlpha = (selected ? 0.95 : 0.58) * dim;
     ctx.strokeStyle = selected ? "#ffffff" : region.color;
     ctx.lineWidth = (selected ? 5 : 3) / this.camera.scale;
     ctx.stroke();
-    ctx.globalAlpha = 0.82;
+    ctx.globalAlpha = 0.82 * dim;
     ctx.fillStyle = region.color;
     ctx.font = `700 ${lod === "overview" ? Math.max(56, 22 / this.camera.scale) : 28}px Inter, system-ui, sans-serif`;
     ctx.fillText(region.title, bounds.x + 22, bounds.y + 46);
@@ -888,8 +1100,14 @@ export class CanvasEngine {
     const selectedNodes = this.state.selectedNodeIds;
     const edgeSelected = this.state.selectedConnectionId === edge.id;
     const focused = selectedNodes.length > 0 || Boolean(this.state.selectedConnectionId);
-    const related = edgeSelected || selectedNodes.includes(from.id) || selectedNodes.includes(to.id);
-    const alpha = focused ? (related ? 0.95 : 0.08) : edge.relation === "reference" ? 0.45 : 0.7;
+    const related = this.focusReachable
+      ? this.focusReachable.has(from.id) && this.focusReachable.has(to.id)
+      : edgeSelected || selectedNodes.includes(from.id) || selectedNodes.includes(to.id);
+    const alpha = this.focusReachable
+      ? (related ? 0.95 : 0.05)
+      : focused
+        ? (related ? 0.95 : 0.08)
+        : edge.relation === "reference" ? 0.45 : 0.7;
     const start = this.edgePoint(from, to);
     const end = this.edgePoint(to, from);
     const dx = end.x - start.x;
@@ -900,20 +1118,47 @@ export class CanvasEngine {
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = edgeSelected ? "#ffffff" : edge.color;
     ctx.lineWidth = (edgeSelected ? 5 : related ? 3.5 : 2.2) / Math.max(this.camera.scale, 0.2);
+    // Each connection type reads differently at a glance, independent of
+    // color: flow is a solid line with a solid arrow, condition is dashed
+    // with a diamond tip (a branch, not a straight path), reference is
+    // finely dotted with a hollow dot (a soft pointer, not a direction).
+    if (edge.relation === "condition") ctx.setLineDash([10 / this.camera.scale, 6 / this.camera.scale]);
+    else if (edge.relation === "reference") ctx.setLineDash([2 / this.camera.scale, 5 / this.camera.scale]);
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
     ctx.bezierCurveTo(start.x + direction * control, start.y, end.x - direction * control, end.y, end.x, end.y);
     ctx.stroke();
+    ctx.setLineDash([]);
 
     const angle = Math.atan2(end.y - start.y, end.x - start.x);
     const size = 11 / Math.max(this.camera.scale, 0.25);
-    ctx.fillStyle = edge.color;
-    ctx.beginPath();
-    ctx.moveTo(end.x, end.y);
-    ctx.lineTo(end.x - Math.cos(angle - Math.PI / 6) * size, end.y - Math.sin(angle - Math.PI / 6) * size);
-    ctx.lineTo(end.x - Math.cos(angle + Math.PI / 6) * size, end.y - Math.sin(angle + Math.PI / 6) * size);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillStyle = edgeSelected ? "#ffffff" : edge.color;
+    if (edge.relation === "condition") {
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(end.x - Math.cos(angle - Math.PI / 4) * size, end.y - Math.sin(angle - Math.PI / 4) * size);
+      ctx.lineTo(end.x - Math.cos(angle) * size * 1.7, end.y - Math.sin(angle) * size * 1.7);
+      ctx.lineTo(end.x - Math.cos(angle + Math.PI / 4) * size, end.y - Math.sin(angle + Math.PI / 4) * size);
+      ctx.closePath();
+      ctx.fill();
+    } else if (edge.relation === "reference") {
+      const cx = end.x - Math.cos(angle) * size * 0.7;
+      const cy = end.y - Math.sin(angle) * size * 0.7;
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.55, 0, Math.PI * 2);
+      ctx.fillStyle = "#0a0d14";
+      ctx.fill();
+      ctx.lineWidth = 1.6 / Math.max(this.camera.scale, 0.25);
+      ctx.strokeStyle = edgeSelected ? "#ffffff" : edge.color;
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(end.x - Math.cos(angle - Math.PI / 6) * size, end.y - Math.sin(angle - Math.PI / 6) * size);
+      ctx.lineTo(end.x - Math.cos(angle + Math.PI / 6) * size, end.y - Math.sin(angle + Math.PI / 6) * size);
+      ctx.closePath();
+      ctx.fill();
+    }
 
     if (edge.label && lod === "detail") {
       ctx.fillStyle = "#b7c0d5";
@@ -930,13 +1175,16 @@ export class CanvasEngine {
     const bounds = this.effectiveNodeBounds(sourceNode);
     const selected = this.state?.selectedNodeIds.includes(node.id) ?? false;
     const hasFocusedSelection = Boolean(this.state?.selectedNodeIds.length);
-    const related = !hasFocusedSelection || selected || this.isConnectedToSelection(node.id);
+    const related = this.focusReachable
+      ? this.focusReachable.has(node.id)
+      : !hasFocusedSelection || selected || this.isConnectedToSelection(node.id);
+    const dimAlpha = this.focusReachable ? 0.06 : 0.22;
     const progress = this.state?.sessionProgress[node.id] ?? "pending";
     const inActiveSession = !this.sessionMode || this.nodeIsInActiveSession(node);
     const accent = progress === "completed" ? "#34d399" : progress === "active" ? "#fbbf24" : TYPE_COLORS[node.kind];
 
     ctx.save();
-    ctx.globalAlpha = inActiveSession ? (related ? 1 : 0.22) : 0.1;
+    ctx.globalAlpha = inActiveSession ? (related ? 1 : dimAlpha) : 0.1;
 
     ctx.fillStyle = node.color;
     ctx.beginPath();
@@ -953,11 +1201,26 @@ export class CanvasEngine {
 
     if (node.sourceNodeId) {
       ctx.fillStyle = "#38bdf8";
-      ctx.globalAlpha = (inActiveSession ? (related ? 1 : 0.22) : 0.1) * 0.95;
+      ctx.globalAlpha = (inActiveSession ? (related ? 1 : dimAlpha) : 0.1) * 0.95;
       ctx.beginPath();
       ctx.arc(bounds.x + bounds.width - 20, bounds.y + 20, 9, 0, Math.PI * 2);
       ctx.fill();
-      ctx.globalAlpha = inActiveSession ? (related ? 1 : 0.22) : 0.1;
+      ctx.globalAlpha = inActiveSession ? (related ? 1 : dimAlpha) : 0.1;
+    }
+
+    if (lod !== "overview") {
+      const iconX = bounds.x + bounds.width - (node.sourceNodeId ? 42 : 20);
+      const iconY = bounds.y + 20;
+      ctx.fillStyle = "#0009";
+      ctx.beginPath();
+      ctx.arc(iconX, iconY, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "12px 'Segoe UI Emoji', 'Noto Color Emoji', system-ui, sans-serif";
+      ctx.fillText(TYPE_ICONS[node.kind], iconX, iconY + 1);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
     }
 
     const image = node.imageSrc && lod === "detail" ? this.getImage(node.imageSrc) : null;
@@ -969,7 +1232,7 @@ export class CanvasEngine {
     if (image) {
       const availableHeight = clamp(bounds.height - 28, 44, 84);
       ctx.save();
-      ctx.globalAlpha = (inActiveSession ? (related ? 1 : 0.22) : 0.1) * 0.92;
+      ctx.globalAlpha = (inActiveSession ? (related ? 1 : dimAlpha) : 0.1) * 0.92;
       ctx.beginPath();
       ctx.roundRect(bounds.x + bounds.width - availableHeight - 14, bounds.y + 14, availableHeight, availableHeight, 8);
       ctx.clip();
@@ -1077,6 +1340,57 @@ export class CanvasEngine {
       ctx.beginPath();
       ctx.moveTo(start.x, start.y);
       ctx.bezierCurveTo(start.x + direction * control, start.y, end.x - direction * control, end.y, end.x, end.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (this.snapGuideX !== null || this.snapGuideY !== null) {
+      const viewport = cameraWorldBounds(this.camera, 200);
+      ctx.save();
+      ctx.strokeStyle = "#38bdf8";
+      ctx.globalAlpha = 0.85;
+      ctx.lineWidth = 1 / this.camera.scale;
+      if (this.snapGuideX !== null) {
+        ctx.beginPath();
+        ctx.moveTo(this.snapGuideX, viewport.y);
+        ctx.lineTo(this.snapGuideX, viewport.y + viewport.height);
+        ctx.stroke();
+      }
+      if (this.snapGuideY !== null) {
+        ctx.beginPath();
+        ctx.moveTo(viewport.x, this.snapGuideY);
+        ctx.lineTo(viewport.x + viewport.width, this.snapGuideY);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  /** Subtle dashed bounding box behind every node group with 2+ members —
+   * enough to show they move together, without the visual weight of a
+   * region (no fill, no title, no header). */
+  private drawGroups(ctx: CanvasRenderingContext2D): void {
+    if (!this.state || this.sessionMode) return;
+    const byGroup = new Map<string, CanvasNode[]>();
+    for (const node of this.state.nodes) {
+      if (!node.groupId) continue;
+      const list = byGroup.get(node.groupId);
+      if (list) list.push(node);
+      else byGroup.set(node.groupId, [node]);
+    }
+    for (const members of byGroup.values()) {
+      if (members.length < 2) continue;
+      const bounds = members.map((member) => this.effectiveNodeBounds(member));
+      const x = Math.min(...bounds.map((b) => b.x)) - 14;
+      const y = Math.min(...bounds.map((b) => b.y)) - 14;
+      const right = Math.max(...bounds.map((b) => b.x + b.width)) + 14;
+      const bottom = Math.max(...bounds.map((b) => b.y + b.height)) + 14;
+      ctx.save();
+      ctx.strokeStyle = "#a78bfa";
+      ctx.globalAlpha = 0.4;
+      ctx.setLineDash([8 / this.camera.scale, 6 / this.camera.scale]);
+      ctx.lineWidth = 1.5 / this.camera.scale;
+      ctx.beginPath();
+      ctx.roundRect(x, y, right - x, bottom - y, 12);
       ctx.stroke();
       ctx.restore();
     }

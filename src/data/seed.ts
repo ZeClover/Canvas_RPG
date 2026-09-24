@@ -42,6 +42,7 @@ const node = (
   projectId: "project_academia",
   regionId,
   sourceNodeId: null,
+  groupId: null,
   title,
   body,
   instanceNotes: "",
@@ -161,5 +162,8 @@ export function createDemoWorkspace(project = demoProjects[0]): WorkspaceData {
       sessionProgress: {},
     };
   }
-  return { project, nodes, regions, connections, sessionProgress: {} };
+  // These arrays are module-level constants reused across every call —
+  // clone them so callers can safely mutate their own copy (as several
+  // tests do) without corrupting the shared seed data for everyone else.
+  return structuredClone({ project, nodes, regions, connections, sessionProgress: {} });
 }

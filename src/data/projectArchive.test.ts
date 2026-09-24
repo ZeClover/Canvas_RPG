@@ -47,4 +47,12 @@ describe("arquivos de projeto", () => {
   it("gera um nome seguro para o arquivo", () => {
     expect(safeProjectFileName("Academia Mágica: Ano I")).toBe("Academia-Magica-Ano-I.rpgcanvas");
   });
+
+  it("importa um arquivo salvo antes de existir agrupamento (sem groupId) sem quebrar", () => {
+    const workspace = createDemoWorkspace();
+    const archive = JSON.parse(serializeProjectArchive(workspace));
+    for (const node of archive.workspace.nodes) delete node.groupId;
+    const restored = parseProjectArchive(JSON.stringify(archive)).workspace;
+    expect(restored.nodes.every((node) => node.groupId === null)).toBe(true);
+  });
 });
