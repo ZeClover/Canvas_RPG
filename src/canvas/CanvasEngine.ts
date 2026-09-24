@@ -1,12 +1,3 @@
-import {
-  Application,
-  Container,
-  FederatedPointerEvent,
-  Graphics,
-  Rectangle,
-  Sprite,
-  Text,
-} from "pixi.js";
 import { cameraForBounds, cameraWorldBounds, clampScale, collectBounds, intersects, semanticLod } from "../domain/spatial";
 import { SpatialIndex } from "../domain/SpatialIndex";
 import { applyNodeRenderBudget } from "../domain/renderBudget";
@@ -15,7 +6,6 @@ import type {
   CanvasConnection,
   CanvasNode,
   CanvasRegion,
-  ProgressState,
   WorldBounds,
   WorldPoint,
 } from "../domain/types";
@@ -79,37 +69,51 @@ interface ConnectionDraft {
   end: WorldPoint;
 }
 
-const TYPE_COLORS: Record<CanvasNode["kind"], number> = {
-  free: 0x8290ad,
-  scene: 0xa78bfa,
-  speech: 0xf0abfc,
-  npc: 0x38bdf8,
-  event: 0xc084fc,
-  decision: 0xfb7185,
-  condition: 0xfbbf24,
-  combat: 0xf43f5e,
-  clue: 0x22d3ee,
-  improv: 0xf97316,
-  lore: 0x818cf8,
-  place: 0x2dd4bf,
-  item: 0xfacc15,
-  creature: 0xef4444,
-  faction: 0x60a5fa,
-  transition: 0x94a3b8,
+const TYPE_COLORS: Record<CanvasNode["kind"], string> = {
+  free: "#8290ad",
+  scene: "#a78bfa",
+  speech: "#f0abfc",
+  npc: "#38bdf8",
+  event: "#c084fc",
+  decision: "#fb7185",
+  condition: "#fbbf24",
+  combat: "#f43f5e",
+  clue: "#22d3ee",
+  improv: "#f97316",
+  lore: "#818cf8",
+  place: "#2dd4bf",
+  item: "#facc15",
+  creature: "#ef4444",
+  faction: "#60a5fa",
+  transition: "#94a3b8",
 };
 
+const NODE_MIN_WIDTH = 140;
+const NODE_MAX_WIDTH = 900;
+const NODE_MIN_HEIGHT = 76;
+const NODE_MAX_HEIGHT = 700;
+const REGION_MIN_WIDTH = 360;
+const REGION_MAX_WIDTH = 6000;
+const REGION_MIN_HEIGHT = 260;
+const REGION_MAX_HEIGHT = 5000;
+const REGION_HEADER_HEIGHT = 62;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+/**
+ * CanvasEngine is the single source of truth for rendering, coordinates,
+ * hit-testing, camera and every visual interaction on the map. It draws
+ * directly onto one visible <canvas> and reads pointer events from that
+ * same element, so whatever the user sees is exactly what receives clicks —
+ * there is no separate invisible interaction layer to fall out of sync.
+ */
 export class CanvasEngine {
-  private app = new Application();
   private host: HTMLElement;
-  private nativeCanvas = document.createElement("canvas");
-  private nativeContext: CanvasRenderingContext2D | null = null;
+  private canvas = document.createElement("canvas");
+  private ctx: CanvasRenderingContext2D | null = null;
   private callbacks: CanvasEngineCallbacks;
-  private world = new Container();
-  private gridLayer = new Graphics();
-  private regionLayer = new Container();
-  private edgeLayer = new Container();
-  private nodeLayer = new Container();
-  private interactionLayer = new Container();
   private state: WorkspaceState | null = null;
   private camera: CameraState = { x: 0, y: 0, scale: 0.75, viewportWidth: 1, viewportHeight: 1 };
   private isPanning = false;
@@ -123,8 +127,6 @@ export class CanvasEngine {
   private destroyed = false;
   private sessionMode = false;
   private activeSessionId: string | null = null;
-  private lastCullBounds: WorldBounds | null = null;
-  private lastLod = "";
   private resizeObserver: ResizeObserver | null = null;
   private spacePressed = false;
   private initialized = false;
@@ -133,6 +135,7 @@ export class CanvasEngine {
   private edgesByNodeId = new Map<string, CanvasConnection[]>();
   private initialFitDone = false;
   private cameraAnimationId = 0;
+  private imageCache = new Map<string, HTMLImageElement>();
 
   constructor(host: HTMLElement, callbacks: CanvasEngineCallbacks) {
     this.host = host;
@@ -140,255 +143,390 @@ export class CanvasEngine {
   }
 
   async init(): Promise<void> {
-    const initialWidth = Math.max(1, this.host.clientWidth);
-    const initialHeight = Math.max(1, this.host.clientHeight);
-    await this.app.init({
-      width: initialWidth,
-      height: initialHeight,
-      antialias: true,
-      backgroundAlpha: 0,
-      resolution: Math.min(window.devicePixelRatio || 1, 2),
-      autoDensity: true,
-      // Canvas 2D is more reliable inside Windows WebView2 than forcing WebGL.
-      // The render budget still keeps large workspaces responsive.
-      preference: "canvas",
-    });
+    this.canvas.className = "canvas-view";
+    this.ctx = this.canvas.getContext("2d");
+    this.host.appendChild(this.canvas);
     this.initialized = true;
-    if (this.destroyed) {
-      this.app.destroy(true, { children: true });
-      return;
-    }
 
-    this.nativeCanvas.className = "native-canvas";
-    this.nativeContext = this.nativeCanvas.getContext("2d");
-    this.app.canvas.className = "pixi-canvas";
-    this.host.append(this.nativeCanvas, this.app.canvas);
-    this.resizeNativeCanvas(initialWidth, initialHeight);
-    this.world.addChild(this.gridLayer, this.regionLayer, this.edgeLayer, this.nodeLayer, this.interactionLayer);
-    this.app.stage.addChild(this.world);
-    this.app.stage.eventMode = "static";
-    this.app.stage.hitArea = new Rectangle(0, 0, this.host.clientWidth, this.host.clientHeight);
+    const width = Math.max(1, this.host.clientWidth);
+    const height = Math.max(1, this.host.clientHeight);
+    this.resizeCanvasElement(width, height);
+    this.camera.viewportWidth = width;
+    this.camera.viewportHeight = height;
 
-    this.camera.viewportWidth = initialWidth;
-    this.camera.viewportHeight = initialHeight;
-    this.updateCameraTransform();
     this.attachEvents();
+    this.render();
 
-    this.resizeObserver = new ResizeObserver(() => {
-      const width = Math.max(1, this.host.clientWidth);
-      const height = Math.max(1, this.host.clientHeight);
-      this.app.renderer.resize(width, height);
-      this.resizeNativeCanvas(width, height);
-      this.camera = {
-        ...this.camera,
-        viewportWidth: width,
-        viewportHeight: height,
-      };
-      this.app.stage.hitArea = new Rectangle(0, 0, width, height);
-      if (!this.initialFitDone && this.state && width >= 100 && height >= 100) {
-        this.fitAll();
-        return;
-      }
-      this.drawScene(true);
-      this.app.render();
-      this.callbacks.onCameraChange(this.getCamera());
-    });
+    this.resizeObserver = new ResizeObserver(() => this.handleHostResize());
     this.resizeObserver.observe(this.host);
   }
 
+  private handleHostResize(): void {
+    if (this.destroyed) return;
+    const width = Math.max(1, this.host.clientWidth);
+    const height = Math.max(1, this.host.clientHeight);
+    this.resizeCanvasElement(width, height);
+    this.camera = { ...this.camera, viewportWidth: width, viewportHeight: height };
+    // Tauri/WebView2 may report layout before the workspace has a usable
+    // size. Never fit against a 1x1 (or otherwise tiny) viewport.
+    if (!this.initialFitDone && this.state && width >= 100 && height >= 100) {
+      this.fitAll();
+      return;
+    }
+    this.render();
+    this.callbacks.onCameraChange(this.getCamera());
+  }
+
+  private resizeCanvasElement(width: number, height: number): void {
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    this.canvas.width = Math.max(1, Math.round(width * ratio));
+    this.canvas.height = Math.max(1, Math.round(height * ratio));
+    this.canvas.style.width = `${width}px`;
+    this.canvas.style.height = `${height}px`;
+  }
+
   private attachEvents(): void {
-    this.app.stage.on("pointerdown", this.onStagePointerDown);
-    this.app.stage.on("pointermove", this.onStagePointerMove);
-    this.app.stage.on("pointerup", this.onStagePointerUp);
-    this.app.stage.on("pointerupoutside", this.onStagePointerUp);
-    this.app.canvas.addEventListener("wheel", this.onWheel, { passive: false });
-    this.app.canvas.addEventListener("dblclick", this.onDoubleClick);
-    this.app.canvas.addEventListener("contextmenu", this.onContextMenu);
+    this.canvas.addEventListener("pointerdown", this.onPointerDown);
+    this.canvas.addEventListener("pointermove", this.onPointerMove);
+    window.addEventListener("pointerup", this.onPointerUp);
+    window.addEventListener("pointercancel", this.onPointerUp);
+    this.canvas.addEventListener("wheel", this.onWheel, { passive: false });
+    this.canvas.addEventListener("dblclick", this.onDoubleClick);
+    this.canvas.addEventListener("contextmenu", this.onContextMenu);
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
   }
 
+  private isTypingTarget(target: EventTarget | null): boolean {
+    return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+  }
+
   private onKeyDown = (event: KeyboardEvent): void => {
-    if (event.code === "Space" && !this.isTypingTarget(event.target)) {
+    if (this.isTypingTarget(event.target)) return;
+    if (event.code === "Space") {
       this.spacePressed = true;
-      this.app.canvas.classList.add("is-pannable");
+      this.canvas.classList.add("is-pannable");
+      return;
+    }
+    if (event.code === "Escape") {
+      const hadActiveGesture = Boolean(
+        this.connectionDraft || this.resize || this.regionResize || this.drag || this.regionDrag || this.selection,
+      );
+      if (hadActiveGesture) {
+        event.preventDefault();
+        this.finalizeGesture(false);
+      }
     }
   };
 
   private onKeyUp = (event: KeyboardEvent): void => {
     if (event.code === "Space") {
       this.spacePressed = false;
-      this.app.canvas.classList.remove("is-pannable");
+      this.canvas.classList.remove("is-pannable");
     }
   };
 
-  private isTypingTarget(target: EventTarget | null): boolean {
-    return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+  private eventPoint(event: PointerEvent | MouseEvent): WorldPoint {
+    const rect = this.canvas.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   }
 
-  private onStagePointerDown = (event: FederatedPointerEvent): void => {
-    if (event.target !== this.app.stage && !this.spacePressed) return;
+  private onPointerDown = (event: PointerEvent): void => {
+    if (event.button === 2) return;
+    const screen = this.eventPoint(event);
+    const world = this.screenToWorld(screen);
+
     if (this.spacePressed || event.button === 1) {
+      this.capture(event.pointerId);
       this.isPanning = true;
-      this.panOrigin = {
-        x: event.global.x,
-        y: event.global.y,
-        cameraX: this.camera.x,
-        cameraY: this.camera.y,
-      };
-      this.app.canvas.classList.add("is-panning");
+      this.panOrigin = { x: screen.x, y: screen.y, cameraX: this.camera.x, cameraY: this.camera.y };
+      this.canvas.classList.add("is-panning");
       return;
     }
-    const point = this.screenToWorld(event.global);
-    this.selection = { start: point, end: point, additive: Boolean(event.shiftKey) };
+    if (event.button !== 0 || !this.state) return;
+
+    if (this.state.selectedNodeIds.length === 1 && !this.sessionMode) {
+      const node = this.nodeById.get(this.state.selectedNodeIds[0]);
+      if (node) {
+        const port = this.outputPortWorld(node);
+        if (this.pointInCircle(world, port.center, port.radius)) {
+          this.capture(event.pointerId);
+          const start = { x: node.x + node.width, y: node.y + node.height / 2 };
+          this.connectionDraft = { fromId: node.id, start, end: world };
+          this.render();
+          return;
+        }
+        const handle = this.nodeResizeHandleWorld(node);
+        if (this.pointInRect(world, handle)) {
+          this.capture(event.pointerId);
+          this.resize = {
+            id: node.id,
+            pointerStart: world,
+            bounds: { x: node.x, y: node.y, width: node.width, height: node.height },
+            width: node.width,
+            height: node.height,
+          };
+          return;
+        }
+      }
+    }
+
+    if (this.state.selectedRegionId && !this.sessionMode) {
+      const region = this.state.regions.find((candidate) => candidate.id === this.state!.selectedRegionId);
+      if (region) {
+        const handle = this.regionResizeHandleWorld(region);
+        if (this.pointInRect(world, handle)) {
+          this.capture(event.pointerId);
+          this.regionResize = {
+            id: region.id,
+            pointerStart: world,
+            bounds: { x: region.x, y: region.y, width: region.width, height: region.height },
+            width: region.width,
+            height: region.height,
+          };
+          return;
+        }
+      }
+    }
+
+    const hitNode = this.hitNode(world);
+    if (hitNode) {
+      this.capture(event.pointerId);
+      if (this.sessionMode) {
+        if (this.nodeIsInActiveSession(hitNode)) this.callbacks.onSessionAdvance(hitNode.id);
+        return;
+      }
+      this.callbacks.onSelectNode(hitNode.id, Boolean(event.shiftKey));
+      if (!this.state.selectedNodeIds.includes(hitNode.id)) return;
+      const positions = new Map(
+        this.state.nodes
+          .filter((candidate) => this.state?.selectedNodeIds.includes(candidate.id))
+          .map((candidate) => [candidate.id, { x: candidate.x, y: candidate.y }]),
+      );
+      this.drag = { pointerStart: world, positions, dx: 0, dy: 0 };
+      return;
+    }
+
+    if (!this.sessionMode) {
+      const edge = this.hitEdge(world);
+      if (edge) {
+        this.callbacks.onSelectConnection(edge.id);
+        this.render();
+        return;
+      }
+
+      const region = this.hitRegionHeader(world);
+      if (region) {
+        this.capture(event.pointerId);
+        this.callbacks.onSelectRegion(region.id);
+        const regionIds = this.descendantRegionIds(region.id);
+        const positions = new Map(
+          (this.state.regions ?? [])
+            .filter((candidate) => regionIds.has(candidate.id))
+            .map((candidate) => [candidate.id, { x: candidate.x, y: candidate.y }]),
+        );
+        const nodePositions = new Map(
+          (this.state.nodes ?? [])
+            .filter((node) => node.regionId && regionIds.has(node.regionId))
+            .map((node) => [node.id, { x: node.x, y: node.y }]),
+        );
+        this.regionDrag = { id: region.id, pointerStart: world, positions, nodePositions, regionIds, dx: 0, dy: 0 };
+        return;
+      }
+    }
+
+    this.capture(event.pointerId);
+    this.selection = { start: world, end: world, additive: Boolean(event.shiftKey) };
     if (!event.shiftKey) this.callbacks.onClearSelection();
-    this.drawInteraction();
+    this.render();
   };
 
-  private onStagePointerMove = (event: FederatedPointerEvent): void => {
-    const worldPoint = this.screenToWorld(event.global);
+  private capture(pointerId: number): void {
+    try {
+      this.canvas.setPointerCapture(pointerId);
+    } catch {
+      // Pointer capture is best-effort; ignore when unsupported (e.g. tests).
+    }
+  }
+
+  private onPointerMove = (event: PointerEvent): void => {
+    const screen = this.eventPoint(event);
+    const world = this.screenToWorld(screen);
+
     if (this.connectionDraft) {
-      this.connectionDraft.end = worldPoint;
-      this.drawInteraction();
+      this.connectionDraft.end = world;
+      this.render();
       return;
     }
     if (this.resize) {
-      this.resize.width = Math.max(140, Math.min(900, this.resize.bounds.width + worldPoint.x - this.resize.pointerStart.x));
-      this.resize.height = Math.max(76, Math.min(700, this.resize.bounds.height + worldPoint.y - this.resize.pointerStart.y));
-      this.previewResize(this.nodeLayer, this.resize.id, this.resize.bounds, this.resize.width, this.resize.height);
+      this.resize.width = clamp(this.resize.bounds.width + world.x - this.resize.pointerStart.x, NODE_MIN_WIDTH, NODE_MAX_WIDTH);
+      this.resize.height = clamp(this.resize.bounds.height + world.y - this.resize.pointerStart.y, NODE_MIN_HEIGHT, NODE_MAX_HEIGHT);
+      this.render();
       return;
     }
     if (this.regionResize) {
-      this.regionResize.width = Math.max(360, Math.min(6000, this.regionResize.bounds.width + worldPoint.x - this.regionResize.pointerStart.x));
-      this.regionResize.height = Math.max(260, Math.min(5000, this.regionResize.bounds.height + worldPoint.y - this.regionResize.pointerStart.y));
-      this.previewResize(this.regionLayer, `region:${this.regionResize.id}`, this.regionResize.bounds, this.regionResize.width, this.regionResize.height);
+      this.regionResize.width = clamp(this.regionResize.bounds.width + world.x - this.regionResize.pointerStart.x, REGION_MIN_WIDTH, REGION_MAX_WIDTH);
+      this.regionResize.height = clamp(this.regionResize.bounds.height + world.y - this.regionResize.pointerStart.y, REGION_MIN_HEIGHT, REGION_MAX_HEIGHT);
+      this.render();
       return;
     }
     if (this.drag) {
-      this.drag.dx = worldPoint.x - this.drag.pointerStart.x;
-      this.drag.dy = worldPoint.y - this.drag.pointerStart.y;
-      for (const [id, position] of this.drag.positions) {
-        const display = this.nodeLayer.children.find((child) => child.label === id);
-        display?.position.set(position.x + this.drag.dx, position.y + this.drag.dy);
-      }
+      this.drag.dx = world.x - this.drag.pointerStart.x;
+      this.drag.dy = world.y - this.drag.pointerStart.y;
+      this.render();
       return;
     }
     if (this.regionDrag) {
-      this.regionDrag.dx = worldPoint.x - this.regionDrag.pointerStart.x;
-      this.regionDrag.dy = worldPoint.y - this.regionDrag.pointerStart.y;
-      for (const [id, position] of this.regionDrag.positions) {
-        const display = this.regionLayer.children.find((child) => child.label === `region:${id}`);
-        display?.position.set(position.x + this.regionDrag.dx, position.y + this.regionDrag.dy);
-      }
-      for (const [id, position] of this.regionDrag.nodePositions) {
-        const display = this.nodeLayer.children.find((child) => child.label === id);
-        display?.position.set(position.x + this.regionDrag.dx, position.y + this.regionDrag.dy);
-      }
+      this.regionDrag.dx = world.x - this.regionDrag.pointerStart.x;
+      this.regionDrag.dy = world.y - this.regionDrag.pointerStart.y;
+      this.render();
       return;
     }
     if (this.selection) {
-      this.selection.end = worldPoint;
-      this.drawInteraction();
+      this.selection.end = world;
+      this.render();
       return;
     }
-    if (!this.isPanning) return;
-    this.camera.x = this.panOrigin.cameraX + event.global.x - this.panOrigin.x;
-    this.camera.y = this.panOrigin.cameraY + event.global.y - this.panOrigin.y;
-    this.updateCameraTransform();
-    this.refreshVisibilityIfNeeded();
-    this.callbacks.onCameraChange(this.getCamera());
+    if (this.isPanning) {
+      this.camera.x = this.panOrigin.cameraX + screen.x - this.panOrigin.x;
+      this.camera.y = this.panOrigin.cameraY + screen.y - this.panOrigin.y;
+      this.render();
+      this.callbacks.onCameraChange(this.getCamera());
+      return;
+    }
+    if (!this.spacePressed) this.updateHoverCursor(world);
   };
 
-  private onStagePointerUp = (): void => {
+  private updateHoverCursor(world: WorldPoint): void {
+    if (!this.state) return;
+    if (this.state.selectedNodeIds.length === 1 && !this.sessionMode) {
+      const node = this.nodeById.get(this.state.selectedNodeIds[0]);
+      if (node) {
+        const port = this.outputPortWorld(node);
+        if (this.pointInCircle(world, port.center, port.radius)) {
+          this.canvas.style.cursor = "crosshair";
+          return;
+        }
+        if (this.pointInRect(world, this.nodeResizeHandleWorld(node))) {
+          this.canvas.style.cursor = "nwse-resize";
+          return;
+        }
+      }
+    }
+    if (this.state.selectedRegionId && !this.sessionMode) {
+      const region = this.state.regions.find((candidate) => candidate.id === this.state!.selectedRegionId);
+      if (region && this.pointInRect(world, this.regionResizeHandleWorld(region))) {
+        this.canvas.style.cursor = "nwse-resize";
+        return;
+      }
+    }
+    if (this.hitNode(world)) {
+      this.canvas.style.cursor = this.sessionMode ? "pointer" : "grab";
+      return;
+    }
+    if (!this.sessionMode && this.hitEdge(world)) {
+      this.canvas.style.cursor = "pointer";
+      return;
+    }
+    if (!this.sessionMode && this.hitRegionHeader(world)) {
+      this.canvas.style.cursor = "grab";
+      return;
+    }
+    this.canvas.style.cursor = "default";
+  }
+
+  private onPointerUp = (event: PointerEvent): void => {
+    if (this.canvas.hasPointerCapture?.(event.pointerId)) {
+      try {
+        this.canvas.releasePointerCapture(event.pointerId);
+      } catch {
+        // Ignore — pointer may already have been released by the browser.
+      }
+    }
+    this.finalizeGesture(true);
+  };
+
+  private finalizeGesture(commit: boolean): void {
     if (this.connectionDraft) {
       const draft = this.connectionDraft;
-      const target = this.hitNode(draft.end);
       this.connectionDraft = null;
-      this.drawInteraction();
-      if (target && target.id !== draft.fromId) this.callbacks.onCreateConnection(draft.fromId, target.id);
+      if (commit) {
+        const target = this.hitNode(draft.end);
+        if (target && target.id !== draft.fromId) this.callbacks.onCreateConnection(draft.fromId, target.id);
+      }
     }
     if (this.resize) {
       const { id, bounds, width, height } = this.resize;
       this.resize = null;
-      if (width !== bounds.width || height !== bounds.height) {
+      if (commit && (width !== bounds.width || height !== bounds.height)) {
         this.callbacks.onResizeNode(id, { ...bounds, width, height });
       }
     }
     if (this.regionResize) {
       const { id, bounds, width, height } = this.regionResize;
       this.regionResize = null;
-      if (width !== bounds.width || height !== bounds.height) {
+      if (commit && (width !== bounds.width || height !== bounds.height)) {
         this.callbacks.onResizeRegion(id, { ...bounds, width, height });
       }
     }
     if (this.drag) {
       const { positions, dx, dy } = this.drag;
       this.drag = null;
-      if (dx !== 0 || dy !== 0) {
-        this.callbacks.onMoveNodes([...positions].map(([id, position]) => ({
-          id,
-          x: position.x + dx,
-          y: position.y + dy,
-        })));
+      if (commit && (dx !== 0 || dy !== 0)) {
+        this.callbacks.onMoveNodes([...positions].map(([id, position]) => ({ id, x: position.x + dx, y: position.y + dy })));
       }
     }
     if (this.regionDrag) {
       const { id, positions, dx, dy } = this.regionDrag;
       this.regionDrag = null;
       const position = positions.get(id);
-      if (position && (dx !== 0 || dy !== 0)) {
+      if (commit && position && (dx !== 0 || dy !== 0)) {
         this.callbacks.onMoveRegion(id, { x: position.x + dx, y: position.y + dy });
       }
     }
     if (this.selection) {
       const selection = this.selection;
       this.selection = null;
-      const bounds = this.normalizedBounds(selection.start, selection.end);
-      if (bounds.width > 4 / this.camera.scale || bounds.height > 4 / this.camera.scale) {
-        const ids = this.nodeIndex.search(bounds).map((node) => node.id);
-        this.callbacks.onSelectNodes(ids, selection.additive);
+      if (commit) {
+        const bounds = this.normalizedBounds(selection.start, selection.end);
+        if (bounds.width > 4 / this.camera.scale || bounds.height > 4 / this.camera.scale) {
+          const ids = this.nodeIndex.search(bounds).map((node) => node.id);
+          this.callbacks.onSelectNodes(ids, selection.additive);
+        }
       }
-      this.drawInteraction();
     }
     this.isPanning = false;
-    this.app.canvas.classList.remove("is-panning");
-  };
+    this.canvas.classList.remove("is-panning");
+    this.render();
+  }
 
   private onWheel = (event: WheelEvent): void => {
     event.preventDefault();
-    const rect = this.app.canvas.getBoundingClientRect();
-    const cursor = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const cursor = this.eventPoint(event);
     const before = this.screenToWorld(cursor);
     const factor = Math.exp(-event.deltaY * 0.0012);
     const nextScale = clampScale(this.camera.scale * factor);
     this.camera.scale = nextScale;
     this.camera.x = cursor.x - before.x * nextScale;
     this.camera.y = cursor.y - before.y * nextScale;
-    this.updateCameraTransform();
-    if (semanticLod(nextScale) !== this.lastLod) this.drawScene(true);
-    else {
-      this.drawGrid();
-      this.refreshVisibilityIfNeeded();
-    }
+    this.render();
     this.callbacks.onCameraChange(this.getCamera());
   };
 
   private onDoubleClick = (event: MouseEvent): void => {
-    const rect = this.app.canvas.getBoundingClientRect();
-    const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-    const point = this.screenToWorld(screen);
-    const hit = this.hitNode(point);
+    const screen = this.eventPoint(event);
+    const world = this.screenToWorld(screen);
+    const hit = this.hitNode(world);
     if (hit) {
       this.callbacks.onEditNode(hit.id, this.nodeScreenBounds(hit));
       return;
     }
-    this.callbacks.onCreateNode({ x: point.x - 120, y: point.y - 40 }, screen);
+    this.callbacks.onCreateNode({ x: world.x - 120, y: world.y - 40 }, screen);
   };
 
   private onContextMenu = (event: MouseEvent): void => {
     event.preventDefault();
-    const rect = this.app.canvas.getBoundingClientRect();
-    const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const screen = this.eventPoint(event);
     const world = this.screenToWorld(screen);
     const node = this.hitNode(world);
     if (node) {
@@ -406,35 +544,228 @@ export class CanvasEngine {
     this.callbacks.onContextMenu({ kind: "canvas", id: null, world, screen });
   };
 
+  // ---- geometry & hit testing -------------------------------------------------
+
+  private effectiveNodeBounds(node: CanvasNode): WorldBounds {
+    if (this.resize && this.resize.id === node.id) {
+      return { x: this.resize.bounds.x, y: this.resize.bounds.y, width: this.resize.width, height: this.resize.height };
+    }
+    if (this.drag) {
+      const position = this.drag.positions.get(node.id);
+      if (position) return { x: position.x + this.drag.dx, y: position.y + this.drag.dy, width: node.width, height: node.height };
+    }
+    if (this.regionDrag) {
+      const position = this.regionDrag.nodePositions.get(node.id);
+      if (position) return { x: position.x + this.regionDrag.dx, y: position.y + this.regionDrag.dy, width: node.width, height: node.height };
+    }
+    return { x: node.x, y: node.y, width: node.width, height: node.height };
+  }
+
+  private effectiveRegionBounds(region: CanvasRegion): WorldBounds {
+    if (this.regionResize && this.regionResize.id === region.id) {
+      return { x: this.regionResize.bounds.x, y: this.regionResize.bounds.y, width: this.regionResize.width, height: this.regionResize.height };
+    }
+    if (this.regionDrag) {
+      const position = this.regionDrag.positions.get(region.id);
+      if (position) return { x: position.x + this.regionDrag.dx, y: position.y + this.regionDrag.dy, width: region.width, height: region.height };
+    }
+    return { x: region.x, y: region.y, width: region.width, height: region.height };
+  }
+
   private hitNode(point: WorldPoint): CanvasNode | null {
     if (!this.state) return null;
     for (let index = this.state.nodes.length - 1; index >= 0; index -= 1) {
       const node = this.state.nodes[index];
-      if (
-        point.x >= node.x &&
-        point.x <= node.x + node.width &&
-        point.y >= node.y &&
-        point.y <= node.y + node.height
-      ) return node;
+      const bounds = this.effectiveNodeBounds(node);
+      if (this.pointInRect(point, bounds)) return node;
     }
     return null;
   }
 
   private hitRegion(point: WorldPoint): CanvasRegion | null {
-    return this.state?.regions
-      .filter((region) => point.x >= region.x && point.x <= region.x + region.width && point.y >= region.y && point.y <= region.y + region.height)
+    if (!this.state) return null;
+    return this.state.regions
+      .filter((region) => this.pointInRect(point, this.effectiveRegionBounds(region)))
       .sort((a, b) => a.width * a.height - b.width * b.height)[0] ?? null;
   }
 
-  private nodeScreenBounds(node: CanvasNode): WorldBounds {
-    const point = this.worldToScreen({ x: node.x, y: node.y });
+  private hitRegionHeader(point: WorldPoint): CanvasRegion | null {
+    if (!this.state) return null;
+    return this.state.regions
+      .filter((region) => {
+        const bounds = this.effectiveRegionBounds(region);
+        return point.x >= bounds.x && point.x <= bounds.x + bounds.width && point.y >= bounds.y && point.y <= bounds.y + REGION_HEADER_HEIGHT;
+      })
+      .sort((a, b) => a.width * a.height - b.width * b.height)[0] ?? null;
+  }
+
+  private hitEdge(point: WorldPoint): CanvasConnection | null {
+    if (!this.state) return null;
+    const tolerance = 10 / Math.max(this.camera.scale, 0.2);
+    let closest: CanvasConnection | null = null;
+    let closestDistance = tolerance;
+    for (const edge of this.state.connections) {
+      const from = this.nodeById.get(edge.fromNodeId);
+      const to = this.nodeById.get(edge.toNodeId);
+      if (!from || !to) continue;
+      const start = this.edgePoint(from, to);
+      const end = this.edgePoint(to, from);
+      const distance = this.distanceToBezier(point, start, end);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closest = edge;
+      }
+    }
+    return closest;
+  }
+
+  private distanceToBezier(point: WorldPoint, start: WorldPoint, end: WorldPoint): number {
+    const dx = end.x - start.x;
+    const direction = Math.sign(dx || 1);
+    const control = Math.max(60, Math.abs(dx) * 0.42);
+    const c1 = { x: start.x + direction * control, y: start.y };
+    const c2 = { x: end.x - direction * control, y: end.y };
+    let minDistance = Infinity;
+    const steps = 24;
+    let previous = start;
+    for (let step = 1; step <= steps; step += 1) {
+      const t = step / steps;
+      const point2 = this.cubicBezierPoint(start, c1, c2, end, t);
+      minDistance = Math.min(minDistance, this.distanceToSegment(point, previous, point2));
+      previous = point2;
+    }
+    return minDistance;
+  }
+
+  private cubicBezierPoint(p0: WorldPoint, p1: WorldPoint, p2: WorldPoint, p3: WorldPoint, t: number): WorldPoint {
+    const u = 1 - t;
+    const a = u * u * u;
+    const b = 3 * u * u * t;
+    const c = 3 * u * t * t;
+    const d = t * t * t;
     return {
-      x: point.x,
-      y: point.y,
-      width: node.width * this.camera.scale,
-      height: node.height * this.camera.scale,
+      x: a * p0.x + b * p1.x + c * p2.x + d * p3.x,
+      y: a * p0.y + b * p1.y + c * p2.y + d * p3.y,
     };
   }
+
+  private distanceToSegment(point: WorldPoint, a: WorldPoint, b: WorldPoint): number {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const lengthSquared = dx * dx + dy * dy;
+    const t = lengthSquared === 0 ? 0 : clamp(((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared, 0, 1);
+    const projX = a.x + t * dx;
+    const projY = a.y + t * dy;
+    return Math.hypot(point.x - projX, point.y - projY);
+  }
+
+  private pointInRect(point: WorldPoint, rect: WorldBounds): boolean {
+    return point.x >= rect.x && point.x <= rect.x + rect.width && point.y >= rect.y && point.y <= rect.y + rect.height;
+  }
+
+  private pointInCircle(point: WorldPoint, center: WorldPoint, radius: number): boolean {
+    return Math.hypot(point.x - center.x, point.y - center.y) <= radius;
+  }
+
+  private nodeResizeHandleWorld(node: CanvasNode): WorldBounds {
+    const bounds = this.effectiveNodeBounds(node);
+    const size = 17 / Math.max(this.camera.scale, 0.25);
+    return { x: bounds.x + bounds.width - size / 2, y: bounds.y + bounds.height - size / 2, width: size, height: size };
+  }
+
+  private outputPortWorld(node: CanvasNode): { center: WorldPoint; radius: number } {
+    const bounds = this.effectiveNodeBounds(node);
+    const radius = (13 / Math.max(this.camera.scale, 0.25)) * 1.4;
+    return { center: { x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, radius };
+  }
+
+  private regionResizeHandleWorld(region: CanvasRegion): WorldBounds {
+    const bounds = this.effectiveRegionBounds(region);
+    const size = 18 / Math.max(this.camera.scale, 0.25);
+    return { x: bounds.x + bounds.width - size / 2, y: bounds.y + bounds.height - size / 2, width: size, height: size };
+  }
+
+  private nodeScreenBounds(node: CanvasNode): WorldBounds {
+    const bounds = this.effectiveNodeBounds(node);
+    const point = this.worldToScreen({ x: bounds.x, y: bounds.y });
+    return { x: point.x, y: point.y, width: bounds.width * this.camera.scale, height: bounds.height * this.camera.scale };
+  }
+
+  private normalizedBounds(start: WorldPoint, end: WorldPoint): WorldBounds {
+    return {
+      x: Math.min(start.x, end.x),
+      y: Math.min(start.y, end.y),
+      width: Math.abs(end.x - start.x),
+      height: Math.abs(end.y - start.y),
+    };
+  }
+
+  private descendantRegionIds(id: string): Set<string> {
+    const ids = new Set([id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const region of this.state?.regions ?? []) {
+        if (region.parentRegionId && ids.has(region.parentRegionId) && !ids.has(region.id)) {
+          ids.add(region.id);
+          changed = true;
+        }
+      }
+    }
+    return ids;
+  }
+
+  private getImage(src: string): HTMLImageElement | null {
+    let image = this.imageCache.get(src);
+    if (!image) {
+      image = new Image();
+      image.src = src;
+      image.onload = () => this.render();
+      this.imageCache.set(src, image);
+    }
+    return image.complete && image.naturalWidth > 0 ? image : null;
+  }
+
+  private resolvedNode(node: CanvasNode): CanvasNode {
+    if (!node.sourceNodeId || !this.state) return node;
+    const original = this.nodeById.get(node.sourceNodeId);
+    return original ? { ...node, title: original.title, imageSrc: original.imageSrc, tags: original.tags, color: original.color } : node;
+  }
+
+  private isConnectedToSelection(nodeId: string): boolean {
+    if (!this.state) return false;
+    const selected = this.state.selectedNodeIds;
+    return selected.some((selectedId) =>
+      (this.edgesByNodeId.get(selectedId) ?? []).some(
+        (edge) => (edge.fromNodeId === selectedId && edge.toNodeId === nodeId) || (edge.toNodeId === selectedId && edge.fromNodeId === nodeId),
+      ),
+    );
+  }
+
+  private nodeIsInActiveSession(node: CanvasNode): boolean {
+    if (!this.activeSessionId || !node.regionId) return false;
+    let regionId: string | null = node.regionId;
+    while (regionId) {
+      if (regionId === this.activeSessionId) return true;
+      regionId = this.state?.regions.find((region) => region.id === regionId)?.parentRegionId ?? null;
+    }
+    return false;
+  }
+
+  private edgePoint(node: CanvasNode, other: CanvasNode): WorldPoint {
+    const bounds = this.effectiveNodeBounds(node);
+    const otherBounds = this.effectiveNodeBounds(other);
+    const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+    const otherCenter = { x: otherBounds.x + otherBounds.width / 2, y: otherBounds.y + otherBounds.height / 2 };
+    const dx = otherCenter.x - center.x;
+    const dy = otherCenter.y - center.y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      return { x: dx > 0 ? bounds.x + bounds.width : bounds.x, y: center.y };
+    }
+    return { x: center.x, y: dy > 0 ? bounds.y + bounds.height : bounds.y };
+  }
+
+  // ---- rendering ----------------------------------------------------------------
 
   setState(state: WorkspaceState): void {
     const nodesChanged = state.nodes !== this.state?.nodes;
@@ -451,112 +782,51 @@ export class CanvasEngine {
         this.edgesByNodeId.set(edge.toNodeId, [...(this.edgesByNodeId.get(edge.toNodeId) ?? []), edge]);
       }
     }
-    this.drawScene(true);
+    this.render();
   }
 
   setSessionMode(active: boolean, sessionId: string | null = null): void {
     this.sessionMode = active;
     this.activeSessionId = sessionId;
-    this.drawScene(true);
+    this.render();
   }
 
-  private updateCameraTransform(): void {
-    this.world.position.set(this.camera.x, this.camera.y);
-    this.world.scale.set(this.camera.scale);
-    if (this.initialized) this.drawNativeScene();
-  }
-
-  private refreshVisibilityIfNeeded(): void {
-    const next = cameraWorldBounds(this.camera, 300);
-    if (!this.lastCullBounds) {
-      this.drawScene(true);
-      return;
-    }
-    const insetX = this.lastCullBounds.width * 0.18;
-    const insetY = this.lastCullBounds.height * 0.18;
-    const safe = {
-      x: this.lastCullBounds.x + insetX,
-      y: this.lastCullBounds.y + insetY,
-      width: this.lastCullBounds.width - insetX * 2,
-      height: this.lastCullBounds.height - insetY * 2,
-    };
-    const viewportExpanded = next.width > this.lastCullBounds.width * 1.35 || next.height > this.lastCullBounds.height * 1.35;
-    if (viewportExpanded || !intersects(safe, { x: next.x + next.width / 2, y: next.y + next.height / 2, width: 1, height: 1 })) {
-      this.drawScene(true);
-    }
-  }
-
-  private drawScene(force = false): void {
-    if (!this.state || !this.app.renderer) return;
-    this.drawNativeScene();
-    const lod = semanticLod(this.camera.scale);
-    if (!force && lod === this.lastLod) {
-      this.drawGrid();
-      return;
-    }
-    this.lastLod = lod;
-    const viewport = cameraWorldBounds(this.camera, 420);
-    this.lastCullBounds = viewport;
-    this.drawGrid();
-    this.regionLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
-    this.edgeLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
-    this.nodeLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
-
-    const visibleRegions = this.state.regions.filter((region) => intersects(viewport, region));
-    // Every node must remain visible at every zoom level. LOD changes detail,
-    // never whether the user's content exists on screen.
-    const candidates = this.nodeIndex.search(viewport);
-    const visibleNodes = applyNodeRenderBudget(candidates, {
-      x: viewport.x + viewport.width / 2,
-      y: viewport.y + viewport.height / 2,
-    });
-    const visibleIds = new Set(visibleNodes.map((node) => node.id));
-
-    for (const region of visibleRegions) this.drawRegion(region, lod);
-    if (lod !== "overview") {
-      const visibleEdges = new Map<string, CanvasConnection>();
-      for (const nodeId of visibleIds) {
-        for (const edge of this.edgesByNodeId.get(nodeId) ?? []) visibleEdges.set(edge.id, edge);
-      }
-      for (const edge of visibleEdges.values()) this.drawEdge(edge, lod);
-    }
-    for (const node of visibleNodes) this.drawNode(node, lod);
-    this.app.render();
-  }
-
-  private resizeNativeCanvas(width: number, height: number): void {
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    this.nativeCanvas.width = Math.max(1, Math.round(width * ratio));
-    this.nativeCanvas.height = Math.max(1, Math.round(height * ratio));
-    this.nativeCanvas.style.width = `${width}px`;
-    this.nativeCanvas.style.height = `${height}px`;
-  }
-
-  /**
-   * WebView2 can create a working Pixi interaction surface while failing to
-   * paint its accelerated scene. This native 2D layer is the dependable visual
-   * renderer; the transparent Pixi canvas above it keeps the existing input
-   * and hit-testing behavior intact.
-   */
-  private drawNativeScene(): void {
-    const ctx = this.nativeContext;
+  private render(): void {
+    const ctx = this.ctx;
     if (!ctx || !this.state) return;
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    const width = this.camera.viewportWidth;
-    const height = this.camera.viewportHeight;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, this.nativeCanvas.width, this.nativeCanvas.height);
-    ctx.setTransform(
-      ratio * this.camera.scale,
-      0,
-      0,
-      ratio * this.camera.scale,
-      ratio * this.camera.x,
-      ratio * this.camera.y,
-    );
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.setTransform(ratio * this.camera.scale, 0, 0, ratio * this.camera.scale, ratio * this.camera.x, ratio * this.camera.y);
 
     const viewport = cameraWorldBounds(this.camera, 420);
     const lod = semanticLod(this.camera.scale);
+
+    this.drawGrid(ctx, viewport);
+
+    const visibleRegions = this.state.regions.filter((region) => intersects(viewport, this.effectiveRegionBounds(region)));
+    for (const region of visibleRegions) this.drawRegion(ctx, region, lod);
+
+    const candidates = this.nodeIndex.search(viewport);
+    const visibleNodes = applyNodeRenderBudget(candidates, { x: viewport.x + viewport.width / 2, y: viewport.y + viewport.height / 2 });
+    const visibleIds = new Set(visibleNodes.map((node) => node.id));
+
+    if (lod !== "overview") {
+      const edges = new Map<string, CanvasConnection>();
+      for (const id of visibleIds) {
+        for (const edge of this.edgesByNodeId.get(id) ?? []) edges.set(edge.id, edge);
+      }
+      for (const edge of edges.values()) this.drawEdge(ctx, edge, lod);
+    }
+
+    // Every node stays visible at every zoom level — LOD only changes how
+    // much detail is drawn inside the box, never whether it exists on screen.
+    for (const node of visibleNodes) this.drawNode(ctx, node, lod);
+
+    this.drawInteractionOverlay(ctx);
+  }
+
+  private drawGrid(ctx: CanvasRenderingContext2D, viewport: WorldBounds): void {
     const minor = this.camera.scale < 0.16 ? 400 : this.camera.scale < 0.5 ? 160 : 80;
     const startX = Math.floor(viewport.x / minor) * minor;
     const startY = Math.floor(viewport.y / minor) * minor;
@@ -572,92 +842,188 @@ export class CanvasEngine {
     ctx.strokeStyle = "rgba(83, 96, 120, .13)";
     ctx.lineWidth = 1 / this.camera.scale;
     ctx.stroke();
+  }
 
-    for (const region of this.state.regions.filter((item) => intersects(viewport, item))) {
+  private drawRegion(ctx: CanvasRenderingContext2D, region: CanvasRegion, lod: string): void {
+    const bounds = this.effectiveRegionBounds(region);
+    const selected = this.state?.selectedRegionId === region.id;
+    ctx.save();
+    ctx.globalAlpha = region.kind === "session" ? 0.08 : 0.055;
+    ctx.fillStyle = region.color;
+    ctx.beginPath();
+    ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 24);
+    ctx.fill();
+    ctx.globalAlpha = selected ? 0.95 : 0.58;
+    ctx.strokeStyle = selected ? "#ffffff" : region.color;
+    ctx.lineWidth = (selected ? 5 : 3) / this.camera.scale;
+    ctx.stroke();
+    ctx.globalAlpha = 0.82;
+    ctx.fillStyle = region.color;
+    ctx.font = `700 ${lod === "overview" ? Math.max(56, 22 / this.camera.scale) : 28}px Inter, system-ui, sans-serif`;
+    ctx.fillText(region.title, bounds.x + 22, bounds.y + 46);
+    ctx.restore();
+
+    if (selected && !this.sessionMode) {
+      const handle = this.regionResizeHandleWorld(region);
       ctx.save();
-      ctx.globalAlpha = region.kind === "session" ? 0.08 : 0.055;
-      ctx.fillStyle = region.color;
+      ctx.fillStyle = "#ffffff";
+      ctx.globalAlpha = 0.96;
       ctx.beginPath();
-      ctx.roundRect(region.x, region.y, region.width, region.height, 24);
+      ctx.roundRect(handle.x, handle.y, handle.width, handle.height, handle.width * 0.2);
       ctx.fill();
-      ctx.globalAlpha = this.state.selectedRegionId === region.id ? 0.95 : 0.58;
-      ctx.strokeStyle = this.state.selectedRegionId === region.id ? "#ffffff" : region.color;
-      ctx.lineWidth = (this.state.selectedRegionId === region.id ? 5 : 3) / this.camera.scale;
-      ctx.stroke();
-      ctx.globalAlpha = 0.82;
-      ctx.fillStyle = region.color;
-      ctx.font = `700 ${lod === "overview" ? Math.max(56, 22 / this.camera.scale) : 28}px Inter, system-ui, sans-serif`;
-      ctx.fillText(region.title, region.x + 22, region.y + 46);
-      ctx.restore();
-    }
-
-    const candidates = this.nodeIndex.search(viewport);
-    const visibleNodes = applyNodeRenderBudget(candidates, {
-      x: viewport.x + viewport.width / 2,
-      y: viewport.y + viewport.height / 2,
-    });
-    const visibleIds = new Set(visibleNodes.map((node) => node.id));
-
-    if (lod !== "overview") {
-      const edges = new Map<string, CanvasConnection>();
-      for (const id of visibleIds) {
-        for (const edge of this.edgesByNodeId.get(id) ?? []) edges.set(edge.id, edge);
-      }
-      for (const edge of edges.values()) {
-        const from = this.nodeById.get(edge.fromNodeId);
-        const to = this.nodeById.get(edge.toNodeId);
-        if (!from || !to) continue;
-        const x1 = from.x + from.width;
-        const y1 = from.y + from.height / 2;
-        const x2 = to.x;
-        const y2 = to.y + to.height / 2;
-        const control = Math.max(60, Math.abs(x2 - x1) * 0.42);
-        const direction = Math.sign(x2 - x1 || 1);
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.bezierCurveTo(x1 + direction * control, y1, x2 - direction * control, y2, x2, y2);
-        ctx.strokeStyle = edge.color;
-        ctx.globalAlpha = this.state.selectedConnectionId === edge.id ? 1 : 0.72;
-        ctx.lineWidth = (this.state.selectedConnectionId === edge.id ? 5 : 3) / this.camera.scale;
-        ctx.stroke();
-      }
       ctx.globalAlpha = 1;
+      ctx.strokeStyle = region.color;
+      ctx.lineWidth = 2 / Math.max(this.camera.scale, 0.25);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  private drawEdge(ctx: CanvasRenderingContext2D, edge: CanvasConnection, lod: string): void {
+    if (!this.state) return;
+    const from = this.nodeById.get(edge.fromNodeId);
+    const to = this.nodeById.get(edge.toNodeId);
+    if (!from || !to) return;
+
+    const selectedNodes = this.state.selectedNodeIds;
+    const edgeSelected = this.state.selectedConnectionId === edge.id;
+    const focused = selectedNodes.length > 0 || Boolean(this.state.selectedConnectionId);
+    const related = edgeSelected || selectedNodes.includes(from.id) || selectedNodes.includes(to.id);
+    const alpha = focused ? (related ? 0.95 : 0.08) : edge.relation === "reference" ? 0.45 : 0.7;
+    const start = this.edgePoint(from, to);
+    const end = this.edgePoint(to, from);
+    const dx = end.x - start.x;
+    const direction = Math.sign(dx || 1);
+    const control = Math.max(60, Math.abs(dx) * 0.42);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = edgeSelected ? "#ffffff" : edge.color;
+    ctx.lineWidth = (edgeSelected ? 5 : related ? 3.5 : 2.2) / Math.max(this.camera.scale, 0.2);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.bezierCurveTo(start.x + direction * control, start.y, end.x - direction * control, end.y, end.x, end.y);
+    ctx.stroke();
+
+    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+    const size = 11 / Math.max(this.camera.scale, 0.25);
+    ctx.fillStyle = edge.color;
+    ctx.beginPath();
+    ctx.moveTo(end.x, end.y);
+    ctx.lineTo(end.x - Math.cos(angle - Math.PI / 6) * size, end.y - Math.sin(angle - Math.PI / 6) * size);
+    ctx.lineTo(end.x - Math.cos(angle + Math.PI / 6) * size, end.y - Math.sin(angle + Math.PI / 6) * size);
+    ctx.closePath();
+    ctx.fill();
+
+    if (edge.label && lod === "detail") {
+      ctx.fillStyle = "#b7c0d5";
+      ctx.font = "12px Inter, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(edge.label, (start.x + end.x) / 2, (start.y + end.y) / 2 - 10);
+      ctx.textAlign = "left";
+    }
+    ctx.restore();
+  }
+
+  private drawNode(ctx: CanvasRenderingContext2D, sourceNode: CanvasNode, lod: string): void {
+    const node = this.resolvedNode(sourceNode);
+    const bounds = this.effectiveNodeBounds(sourceNode);
+    const selected = this.state?.selectedNodeIds.includes(node.id) ?? false;
+    const hasFocusedSelection = Boolean(this.state?.selectedNodeIds.length);
+    const related = !hasFocusedSelection || selected || this.isConnectedToSelection(node.id);
+    const progress = this.state?.sessionProgress[node.id] ?? "pending";
+    const inActiveSession = !this.sessionMode || this.nodeIsInActiveSession(node);
+    const accent = progress === "completed" ? "#34d399" : progress === "active" ? "#fbbf24" : TYPE_COLORS[node.kind];
+
+    ctx.save();
+    ctx.globalAlpha = inActiveSession ? (related ? 1 : 0.22) : 0.1;
+
+    ctx.fillStyle = node.color;
+    ctx.beginPath();
+    ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 15);
+    ctx.fill();
+    ctx.strokeStyle = selected ? "#ffffff" : accent;
+    ctx.lineWidth = selected ? 4 : 2;
+    ctx.stroke();
+
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.roundRect(bounds.x, bounds.y, 7, bounds.height, 4);
+    ctx.fill();
+
+    if (node.sourceNodeId) {
+      ctx.fillStyle = "#38bdf8";
+      ctx.globalAlpha = (inActiveSession ? (related ? 1 : 0.22) : 0.1) * 0.95;
+      ctx.beginPath();
+      ctx.arc(bounds.x + bounds.width - 20, bounds.y + 20, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = inActiveSession ? (related ? 1 : 0.22) : 0.1;
     }
 
-    for (const source of visibleNodes) {
-      const node = this.resolvedNode(source);
-      const selected = this.state.selectedNodeIds.includes(node.id);
-      const progress = this.state.sessionProgress[node.id] ?? "pending";
-      const accentNumber = progress === "completed" ? 0x34d399 : progress === "active" ? 0xfbbf24 : TYPE_COLORS[node.kind];
-      const accent = `#${accentNumber.toString(16).padStart(6, "0")}`;
-      const active = !this.sessionMode || this.nodeIsInActiveSession(node);
+    const image = node.imageSrc && lod === "detail" ? this.getImage(node.imageSrc) : null;
+    const hasImage = Boolean(image);
+    ctx.fillStyle = "#f7f8ff";
+    ctx.font = `600 ${lod === "region" ? 22 : 19}px Inter, system-ui, sans-serif`;
+    this.fillWrappedText(ctx, node.title || "Sem título", bounds.x + 22, bounds.y + 39, bounds.width - (hasImage ? 112 : 42), 24, 2);
+
+    if (image) {
+      const availableHeight = clamp(bounds.height - 28, 44, 84);
       ctx.save();
-      ctx.globalAlpha = active ? 1 : 0.12;
-      ctx.fillStyle = node.color;
+      ctx.globalAlpha = (inActiveSession ? (related ? 1 : 0.22) : 0.1) * 0.92;
       ctx.beginPath();
-      ctx.roundRect(node.x, node.y, node.width, node.height, 15);
-      ctx.fill();
-      ctx.strokeStyle = selected ? "#ffffff" : accent;
-      ctx.lineWidth = selected ? 4 : 2;
-      ctx.stroke();
-      ctx.fillStyle = accent;
-      ctx.beginPath();
-      ctx.roundRect(node.x, node.y, 7, node.height, 4);
-      ctx.fill();
-      ctx.fillStyle = "#f7f8ff";
-      ctx.font = `600 ${lod === "region" ? 22 : 19}px Inter, system-ui, sans-serif`;
-      this.fillWrappedText(ctx, node.title || "Sem título", node.x + 22, node.y + 39, node.width - 42, 24, 2);
-      if (lod === "detail" && node.body) {
-        ctx.fillStyle = "#aeb8ce";
-        ctx.font = "13px Inter, system-ui, sans-serif";
-        this.fillWrappedText(ctx, node.body, node.x + 22, node.y + 76, node.width - 42, 18, 3);
-      }
+      ctx.roundRect(bounds.x + bounds.width - availableHeight - 14, bounds.y + 14, availableHeight, availableHeight, 8);
+      ctx.clip();
+      ctx.drawImage(image, bounds.x + bounds.width - availableHeight - 14, bounds.y + 14, availableHeight, availableHeight);
       ctx.restore();
     }
 
-    // Prevent unused-variable regressions when the viewport is initially tiny.
-    void width;
-    void height;
+    if (lod === "detail" && node.body) {
+      ctx.fillStyle = "#aeb8ce";
+      ctx.font = "13px Inter, system-ui, sans-serif";
+      this.fillWrappedText(ctx, node.body, bounds.x + 22, bounds.y + 76, bounds.width - 42, 18, 3);
+    }
+
+    if (progress !== "pending") {
+      ctx.fillStyle = progress === "completed" ? "#34d399" : "#fbbf24";
+      ctx.font = "800 22px Inter, system-ui, sans-serif";
+      ctx.fillText(progress === "completed" ? "✓" : "▶", bounds.x + bounds.width - 34, bounds.y + bounds.height - 14);
+    }
+    ctx.restore();
+
+    if (selected && !this.sessionMode) {
+      const controlSize = 13 / Math.max(this.camera.scale, 0.25);
+      ctx.save();
+      ctx.fillStyle = "#111827";
+      ctx.beginPath();
+      ctx.arc(bounds.x, bounds.y + bounds.height / 2, controlSize * 0.52, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#c4b5fd";
+      ctx.lineWidth = 2 / Math.max(this.camera.scale, 0.25);
+      ctx.stroke();
+
+      ctx.fillStyle = "#c4b5fd";
+      ctx.beginPath();
+      ctx.arc(bounds.x + bounds.width, bounds.y + bounds.height / 2, controlSize * 0.62, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#111827";
+      ctx.stroke();
+      ctx.restore();
+
+      if (this.state?.selectedNodeIds.length === 1) {
+        const handle = this.nodeResizeHandleWorld(sourceNode);
+        ctx.save();
+        ctx.fillStyle = "#ffffff";
+        ctx.globalAlpha = 0.96;
+        ctx.beginPath();
+        ctx.roundRect(handle.x, handle.y, handle.width, handle.height, handle.width * 0.2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2 / Math.max(this.camera.scale, 0.25);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
   }
 
   private fillWrappedText(
@@ -686,402 +1052,37 @@ export class CanvasEngine {
     if (line && lineNumber < maxLines) ctx.fillText(line, x, y + lineNumber * lineHeight);
   }
 
-  private drawGrid(): void {
-    this.gridLayer.clear();
-    const bounds = cameraWorldBounds(this.camera, 20);
-    const minor = this.camera.scale < 0.16 ? 400 : this.camera.scale < 0.5 ? 160 : 80;
-    const startX = Math.floor(bounds.x / minor) * minor;
-    const startY = Math.floor(bounds.y / minor) * minor;
-    const maxLines = 160;
-    let lineCount = 0;
-    for (let x = startX; x <= bounds.x + bounds.width && lineCount < maxLines; x += minor, lineCount += 1) {
-      this.gridLayer.moveTo(x, bounds.y).lineTo(x, bounds.y + bounds.height);
-    }
-    for (let y = startY; y <= bounds.y + bounds.height && lineCount < maxLines; y += minor, lineCount += 1) {
-      this.gridLayer.moveTo(bounds.x, y).lineTo(bounds.x + bounds.width, y);
-    }
-    this.gridLayer.stroke({ color: 0x536078, width: 1 / this.camera.scale, alpha: 0.13 });
-  }
-
-  private normalizedBounds(start: WorldPoint, end: WorldPoint): WorldBounds {
-    return {
-      x: Math.min(start.x, end.x),
-      y: Math.min(start.y, end.y),
-      width: Math.abs(end.x - start.x),
-      height: Math.abs(end.y - start.y),
-    };
-  }
-
-  private previewResize(layer: Container, label: string, original: WorldBounds, width: number, height: number): void {
-    const display = layer.children.find((child) => child.label === label);
-    display?.scale.set(width / original.width, height / original.height);
-  }
-
-  private drawInteraction(): void {
-    this.interactionLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
+  private drawInteractionOverlay(ctx: CanvasRenderingContext2D): void {
     if (this.selection) {
       const bounds = this.normalizedBounds(this.selection.start, this.selection.end);
-      const selection = new Graphics()
-        .rect(bounds.x, bounds.y, bounds.width, bounds.height)
-        .fill({ color: 0xa78bfa, alpha: 0.1 })
-        .stroke({ color: 0xc4b5fd, width: 1.5 / this.camera.scale, alpha: 0.9 });
-      this.interactionLayer.addChild(selection);
+      ctx.save();
+      ctx.fillStyle = "#a78bfa";
+      ctx.globalAlpha = 0.1;
+      ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = "#c4b5fd";
+      ctx.lineWidth = 1.5 / this.camera.scale;
+      ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      ctx.restore();
     }
     if (this.connectionDraft) {
       const { start, end } = this.connectionDraft;
       const dx = end.x - start.x;
       const direction = Math.sign(dx || 1);
       const control = Math.max(60, Math.abs(dx) * 0.42);
-      const draft = new Graphics()
-        .moveTo(start.x, start.y)
-        .bezierCurveTo(start.x + direction * control, start.y, end.x - direction * control, end.y, end.x, end.y)
-        .stroke({ color: 0xc4b5fd, width: 3 / Math.max(this.camera.scale, 0.2), alpha: 0.9 });
-      this.interactionLayer.addChild(draft);
+      ctx.save();
+      ctx.strokeStyle = "#c4b5fd";
+      ctx.globalAlpha = 0.9;
+      ctx.lineWidth = 3 / Math.max(this.camera.scale, 0.2);
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.bezierCurveTo(start.x + direction * control, start.y, end.x - direction * control, end.y, end.x, end.y);
+      ctx.stroke();
+      ctx.restore();
     }
   }
 
-  private drawRegion(region: CanvasRegion, lod: string): void {
-    const selected = this.state?.selectedRegionId === region.id;
-    const container = new Container();
-    container.position.set(region.x, region.y);
-    container.label = `region:${region.id}`;
-    const graphic = new Graphics()
-      .roundRect(0, 0, region.width, region.height, 24)
-      .fill({ color: region.color, alpha: region.kind === "session" ? 0.035 : 0.022 })
-      .stroke({
-        color: selected ? 0xffffff : region.color,
-        width: (selected ? 5 : 3) / Math.max(this.camera.scale, 0.16),
-        alpha: selected ? 0.9 : 0.55,
-      });
-    container.addChild(graphic);
-
-    const fontSize = lod === "overview" ? Math.max(56, 22 / this.camera.scale) : 28;
-    const title = new Text({
-      text: region.title,
-      style: {
-        fill: region.color,
-        fontFamily: "Inter, system-ui, sans-serif",
-        fontSize,
-        fontWeight: "700",
-        letterSpacing: 2,
-      },
-    });
-    title.position.set(22, 18);
-    container.addChild(title);
-
-    if (!this.sessionMode) {
-      const header = new Graphics().roundRect(0, 0, region.width, 62, 24).fill({ color: 0xffffff, alpha: 0.001 });
-      header.eventMode = "static";
-      header.cursor = "grab";
-      header.hitArea = new Rectangle(0, 0, region.width, 62);
-      header.on("pointerdown", (event: FederatedPointerEvent) => {
-        if (this.spacePressed) return;
-        event.stopPropagation();
-        this.callbacks.onSelectRegion(region.id);
-        const pointerStart = this.screenToWorld(event.global);
-        const regionIds = this.descendantRegionIds(region.id);
-        const positions = new Map(
-          (this.state?.regions ?? [])
-            .filter((candidate) => regionIds.has(candidate.id))
-            .map((candidate) => [candidate.id, { x: candidate.x, y: candidate.y }]),
-        );
-        const nodePositions = new Map(
-          (this.state?.nodes ?? [])
-            .filter((node) => node.regionId && regionIds.has(node.regionId))
-            .map((node) => [node.id, { x: node.x, y: node.y }]),
-        );
-        this.regionDrag = { id: region.id, pointerStart, positions, nodePositions, regionIds, dx: 0, dy: 0 };
-      });
-      container.addChild(header);
-    }
-
-    if (selected && !this.sessionMode) {
-      const size = 18 / Math.max(this.camera.scale, 0.25);
-      const handle = new Graphics()
-        .roundRect(-size / 2, -size / 2, size, size, size * 0.2)
-        .fill({ color: 0xffffff, alpha: 0.95 })
-        .stroke({ color: region.color, width: 2 / Math.max(this.camera.scale, 0.25) });
-      handle.position.set(region.width, region.height);
-      handle.eventMode = "static";
-      handle.cursor = "nwse-resize";
-      handle.hitArea = new Rectangle(-size, -size, size * 2, size * 2);
-      handle.on("pointerdown", (event: FederatedPointerEvent) => {
-        if (this.spacePressed) return;
-        event.stopPropagation();
-        this.regionResize = {
-          id: region.id,
-          pointerStart: this.screenToWorld(event.global),
-          bounds: { x: region.x, y: region.y, width: region.width, height: region.height },
-          width: region.width,
-          height: region.height,
-        };
-      });
-      container.addChild(handle);
-    }
-    this.regionLayer.addChild(container);
-  }
-
-  private descendantRegionIds(id: string): Set<string> {
-    const ids = new Set([id]);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const region of this.state?.regions ?? []) {
-        if (region.parentRegionId && ids.has(region.parentRegionId) && !ids.has(region.id)) {
-          ids.add(region.id);
-          changed = true;
-        }
-      }
-    }
-    return ids;
-  }
-
-  private resolvedNode(node: CanvasNode): CanvasNode {
-    if (!node.sourceNodeId || !this.state) return node;
-    const original = this.nodeById.get(node.sourceNodeId);
-    return original ? { ...node, title: original.title, imageSrc: original.imageSrc, tags: original.tags, color: original.color } : node;
-  }
-
-  private drawNode(sourceNode: CanvasNode, lod: string): void {
-    const node = this.resolvedNode(sourceNode);
-    const selected = this.state?.selectedNodeIds.includes(node.id) ?? false;
-    const hasFocusedSelection = Boolean(this.state?.selectedNodeIds.length);
-    const related = !hasFocusedSelection || selected || this.isConnectedToSelection(node.id);
-    const progress = this.state?.sessionProgress[node.id] ?? "pending";
-    const inActiveSession = !this.sessionMode || this.nodeIsInActiveSession(node);
-    const container = new Container();
-    container.position.set(node.x, node.y);
-    container.eventMode = "static";
-    container.cursor = this.sessionMode ? (inActiveSession ? "pointer" : "default") : "grab";
-    container.hitArea = new Rectangle(0, 0, node.width, node.height);
-    container.alpha = inActiveSession ? (related ? 1 : 0.22) : 0.1;
-    container.label = node.id;
-
-    const box = new Graphics();
-    const accent = progress === "completed" ? 0x34d399 : progress === "active" ? 0xfbbf24 : TYPE_COLORS[node.kind];
-    box
-      .roundRect(0, 0, node.width, node.height, 15)
-      .fill({ color: node.color, alpha: 0.98 })
-      .stroke({ color: selected ? 0xffffff : accent, width: selected ? 4 : 2, alpha: selected ? 0.95 : 0.8 });
-    box.roundRect(0, 0, 7, node.height, 4).fill({ color: accent, alpha: 1 });
-    container.addChild(box);
-
-    if (node.sourceNodeId) {
-      const badge = new Graphics().circle(node.width - 20, 20, 9).fill({ color: 0x38bdf8, alpha: 0.95 });
-      container.addChild(badge);
-    }
-
-    const hasImage = Boolean(node.imageSrc) && lod === "detail";
-    const title = new Text({
-      text: node.title || "Sem título",
-      style: {
-        fill: 0xf7f8ff,
-        fontFamily: "Inter, system-ui, sans-serif",
-        fontSize: lod === "region" ? 22 : 19,
-        fontWeight: "600",
-        wordWrap: true,
-        wordWrapWidth: node.width - (hasImage ? 112 : 38),
-        lineHeight: 24,
-      },
-    });
-    title.position.set(22, 17);
-    container.addChild(title);
-
-    if (hasImage && node.imageSrc) {
-      const thumbnail = Sprite.from(node.imageSrc);
-      const availableHeight = Math.max(44, Math.min(84, node.height - 28));
-      thumbnail.position.set(node.width - availableHeight - 14, 14);
-      thumbnail.width = availableHeight;
-      thumbnail.height = availableHeight;
-      thumbnail.alpha = 0.92;
-      container.addChild(thumbnail);
-    }
-
-    if (lod === "detail" && node.body) {
-      const body = new Text({
-        text: node.body.length > 150 ? `${node.body.slice(0, 147)}…` : node.body,
-        style: {
-          fill: 0xaeb8ce,
-          fontFamily: "Inter, system-ui, sans-serif",
-          fontSize: 13,
-          wordWrap: true,
-          wordWrapWidth: node.width - 38,
-          lineHeight: 18,
-        },
-      });
-      body.position.set(22, Math.min(node.height - 50, 54));
-      container.addChild(body);
-    }
-
-    if (progress !== "pending") {
-      const symbol = new Text({
-        text: progress === "completed" ? "✓" : "▶",
-        style: { fill: progress === "completed" ? 0x34d399 : 0xfbbf24, fontSize: 22, fontWeight: "800" },
-      });
-      symbol.position.set(node.width - 34, node.height - 34);
-      container.addChild(symbol);
-    }
-
-    if (selected && !this.sessionMode) {
-      const controlSize = 13 / Math.max(this.camera.scale, 0.25);
-      const inputPort = new Graphics()
-        .circle(0, 0, controlSize * 0.52)
-        .fill({ color: 0x111827, alpha: 1 })
-        .stroke({ color: 0xc4b5fd, width: 2 / Math.max(this.camera.scale, 0.25), alpha: 0.9 });
-      inputPort.position.set(0, node.height / 2);
-      container.addChild(inputPort);
-
-      const outputPort = new Graphics()
-        .circle(0, 0, controlSize * 0.62)
-        .fill({ color: 0xc4b5fd, alpha: 1 })
-        .stroke({ color: 0x111827, width: 2 / Math.max(this.camera.scale, 0.25), alpha: 0.95 });
-      outputPort.position.set(node.width, node.height / 2);
-      outputPort.eventMode = "static";
-      outputPort.cursor = "crosshair";
-      outputPort.hitArea = new Rectangle(-controlSize * 1.4, -controlSize * 1.4, controlSize * 2.8, controlSize * 2.8);
-      outputPort.on("pointerdown", (event: FederatedPointerEvent) => {
-        if (this.spacePressed) return;
-        event.stopPropagation();
-        const start = { x: node.x + node.width, y: node.y + node.height / 2 };
-        this.connectionDraft = { fromId: node.id, start, end: start };
-        this.drawInteraction();
-      });
-      container.addChild(outputPort);
-
-      if (this.state?.selectedNodeIds.length === 1) {
-        const handleSize = 17 / Math.max(this.camera.scale, 0.25);
-        const handle = new Graphics()
-          .roundRect(-handleSize / 2, -handleSize / 2, handleSize, handleSize, handleSize * 0.2)
-          .fill({ color: 0xffffff, alpha: 0.96 })
-          .stroke({ color: accent, width: 2 / Math.max(this.camera.scale, 0.25) });
-        handle.position.set(node.width, node.height);
-        handle.eventMode = "static";
-        handle.cursor = "nwse-resize";
-        handle.hitArea = new Rectangle(-handleSize, -handleSize, handleSize * 2, handleSize * 2);
-        handle.on("pointerdown", (event: FederatedPointerEvent) => {
-          if (this.spacePressed) return;
-          event.stopPropagation();
-          this.resize = {
-            id: node.id,
-            pointerStart: this.screenToWorld(event.global),
-            bounds: { x: node.x, y: node.y, width: node.width, height: node.height },
-            width: node.width,
-            height: node.height,
-          };
-        });
-        container.addChild(handle);
-      }
-    }
-
-    container.on("pointerdown", (event: FederatedPointerEvent) => {
-      if (this.spacePressed) return;
-      event.stopPropagation();
-      if (this.sessionMode) {
-        if (this.nodeIsInActiveSession(node)) this.callbacks.onSessionAdvance(node.id);
-        return;
-      }
-      this.callbacks.onSelectNode(node.id, Boolean(event.shiftKey));
-      if (!this.state?.selectedNodeIds.includes(node.id)) return;
-      const positions = new Map(
-        this.state.nodes
-          .filter((candidate) => this.state?.selectedNodeIds.includes(candidate.id))
-          .map((candidate) => [candidate.id, { x: candidate.x, y: candidate.y }]),
-      );
-      this.drag = {
-        pointerStart: this.screenToWorld(event.global),
-        positions,
-        dx: 0,
-        dy: 0,
-      };
-    });
-    this.nodeLayer.addChild(container);
-  }
-
-  private isConnectedToSelection(nodeId: string): boolean {
-    if (!this.state) return false;
-    const selected = new Set(this.state.selectedNodeIds);
-    return [...selected].some((selectedId) =>
-      (this.edgesByNodeId.get(selectedId) ?? []).some((edge) =>
-        (edge.fromNodeId === selectedId && edge.toNodeId === nodeId) ||
-        (edge.toNodeId === selectedId && edge.fromNodeId === nodeId),
-      ),
-    );
-  }
-
-  private nodeIsInActiveSession(node: CanvasNode): boolean {
-    if (!this.activeSessionId || !node.regionId) return false;
-    let regionId: string | null = node.regionId;
-    while (regionId) {
-      if (regionId === this.activeSessionId) return true;
-      regionId = this.state?.regions.find((region) => region.id === regionId)?.parentRegionId ?? null;
-    }
-    return false;
-  }
-
-  private drawEdge(edge: CanvasConnection, lod: string): void {
-    if (!this.state) return;
-    const from = this.nodeById.get(edge.fromNodeId);
-    const to = this.nodeById.get(edge.toNodeId);
-    if (!from || !to) return;
-
-    const selected = new Set(this.state.selectedNodeIds);
-    const edgeSelected = this.state.selectedConnectionId === edge.id;
-    const focused = selected.size > 0 || Boolean(this.state.selectedConnectionId);
-    const related = edgeSelected || selected.has(from.id) || selected.has(to.id);
-    const alpha = focused ? (related ? 0.95 : 0.08) : edge.relation === "reference" ? 0.45 : 0.7;
-    const start = this.edgePoint(from, to);
-    const end = this.edgePoint(to, from);
-    const dx = end.x - start.x;
-    const control = Math.max(60, Math.abs(dx) * 0.42);
-    const graphic = new Graphics();
-    const hitGraphic = new Graphics()
-      .moveTo(start.x, start.y)
-      .bezierCurveTo(start.x + Math.sign(dx || 1) * control, start.y, end.x - Math.sign(dx || 1) * control, end.y, end.x, end.y)
-      .stroke({ color: 0xffffff, width: 16 / Math.max(this.camera.scale, 0.2), alpha: 0.001 });
-    hitGraphic.eventMode = "static";
-    hitGraphic.cursor = "pointer";
-    hitGraphic.on("pointerdown", (event: FederatedPointerEvent) => {
-      event.stopPropagation();
-      this.callbacks.onSelectConnection(edge.id);
-    });
-    this.edgeLayer.addChild(hitGraphic);
-    graphic
-      .moveTo(start.x, start.y)
-      .bezierCurveTo(start.x + Math.sign(dx || 1) * control, start.y, end.x - Math.sign(dx || 1) * control, end.y, end.x, end.y)
-      .stroke({ color: edgeSelected ? 0xffffff : edge.color, width: (edgeSelected ? 5 : related ? 3.5 : 2.2) / Math.max(this.camera.scale, 0.2), alpha });
-
-    const angle = Math.atan2(end.y - start.y, end.x - start.x);
-    const size = 11 / Math.max(this.camera.scale, 0.25);
-    graphic
-      .moveTo(end.x, end.y)
-      .lineTo(end.x - Math.cos(angle - Math.PI / 6) * size, end.y - Math.sin(angle - Math.PI / 6) * size)
-      .lineTo(end.x - Math.cos(angle + Math.PI / 6) * size, end.y - Math.sin(angle + Math.PI / 6) * size)
-      .closePath()
-      .fill({ color: edge.color, alpha });
-    this.edgeLayer.addChild(graphic);
-
-    if (edge.label && lod === "detail") {
-      const label = new Text({
-        text: edge.label,
-        style: { fill: 0xb7c0d5, fontFamily: "Inter, system-ui", fontSize: 12 },
-      });
-      label.anchor.set(0.5);
-      label.position.set((start.x + end.x) / 2, (start.y + end.y) / 2 - 10);
-      label.alpha = alpha;
-      this.edgeLayer.addChild(label);
-    }
-  }
-
-  private edgePoint(node: CanvasNode, other: CanvasNode): WorldPoint {
-    const center = { x: node.x + node.width / 2, y: node.y + node.height / 2 };
-    const otherCenter = { x: other.x + other.width / 2, y: other.y + other.height / 2 };
-    const dx = otherCenter.x - center.x;
-    const dy = otherCenter.y - center.y;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      return { x: dx > 0 ? node.x + node.width : node.x, y: center.y };
-    }
-    return { x: center.x, y: dy > 0 ? node.y + node.height : node.y };
-  }
+  // ---- camera & coordinates ------------------------------------------------------
 
   getCamera(): CameraState {
     return { ...this.camera };
@@ -1110,7 +1111,8 @@ export class CanvasEngine {
     const viewportWidth = this.host.clientWidth;
     const viewportHeight = this.host.clientHeight;
     // Tauri/WebView2 may mount the canvas before layout has produced a usable
-    // size. Fitting against 1x1 permanently sent the camera to minimum zoom.
+    // size. Fitting against a near-zero viewport would permanently send the
+    // camera to the minimum zoom, so wait for a real size instead.
     if (viewportWidth < 100 || viewportHeight < 100) return;
     this.initialFitDone = true;
     this.camera.viewportWidth = viewportWidth;
@@ -1154,17 +1156,18 @@ export class CanvasEngine {
       if (animationId !== this.cameraAnimationId || this.destroyed) return;
       const raw = Math.min(1, (time - startedAt) / duration);
       const eased = 1 - Math.pow(1 - raw, 3);
+      // Only x/y/scale are interpolated — viewport width/height always come
+      // from the latest ResizeObserver reading via the object spread below,
+      // never from the (possibly stale) animation target.
       this.camera = {
         ...this.camera,
         x: start.x + (target.x - start.x) * eased,
         y: start.y + (target.y - start.y) * eased,
         scale: start.scale + (target.scale - start.scale) * eased,
       };
-      this.updateCameraTransform();
-      this.drawScene(semanticLod(this.camera.scale) !== this.lastLod);
+      this.render();
       this.callbacks.onCameraChange(this.getCamera());
       if (raw < 1) requestAnimationFrame(tick);
-      else this.drawScene(true);
     };
     requestAnimationFrame(tick);
   }
@@ -1173,13 +1176,16 @@ export class CanvasEngine {
     this.destroyed = true;
     this.resizeObserver?.disconnect();
     if (this.initialized) {
-      this.app.canvas.removeEventListener("wheel", this.onWheel);
-      this.app.canvas.removeEventListener("dblclick", this.onDoubleClick);
-      this.app.canvas.removeEventListener("contextmenu", this.onContextMenu);
+      this.canvas.removeEventListener("pointerdown", this.onPointerDown);
+      this.canvas.removeEventListener("pointermove", this.onPointerMove);
+      this.canvas.removeEventListener("wheel", this.onWheel);
+      this.canvas.removeEventListener("dblclick", this.onDoubleClick);
+      this.canvas.removeEventListener("contextmenu", this.onContextMenu);
     }
+    window.removeEventListener("pointerup", this.onPointerUp);
+    window.removeEventListener("pointercancel", this.onPointerUp);
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
-    if (this.initialized) this.app.destroy(true, { children: true });
-    this.nativeCanvas.remove();
+    this.canvas.remove();
   }
 }

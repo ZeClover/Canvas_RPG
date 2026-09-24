@@ -1,4 +1,5 @@
 import type { Project } from "../domain/types";
+import { APP_VERSION } from "../version";
 import { Icons } from "./Icons";
 
 interface TopbarProps {
@@ -23,7 +24,7 @@ export function Topbar({ project, sessionMode, saveLabel, zoom, onBack, onSearch
         <button className="icon-button" onClick={onBack} title="Voltar aos projetos"><Icons.back /></button>
         <div className="project-identity">
           <span className="project-color" style={{ background: project.color }} />
-          <div><strong>{project.title}</strong><small>Canvas principal</small></div>
+          <div><strong>{project.title}</strong><small>Canvas principal · v{APP_VERSION}</small></div>
         </div>
       </div>
 

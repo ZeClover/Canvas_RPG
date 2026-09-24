@@ -1,80 +1,107 @@
-# RPG Canvas Studio
+# RPG Canvas Studio — v1.1.0
 
-Aplicativo desktop local-first para planejar campanhas e escrever sessões de RPG como mapas visuais gigantes.
+Aplicativo desktop local-first (Windows, Tauri) para organizar campanhas de RPG visualmente em um canvas infinito, ao estilo Miro/Obsidian Canvas/Milanote.
 
-O núcleo é um canvas WebGL com zoom semântico: de longe aparecem projetos, regiões e sessões; ao aproximar, surgem cenas, falas, decisões, consequências e referências de lore.
+A versão está visível dentro do próprio app, na barra superior, ao lado do nome do projeto (`Canvas principal · v1.1.0`).
 
-## Estado — v1.0.0
+## O que mudou na v1.1.0 — correção arquitetural do canvas
 
-- canvas PixiJS com pan, zoom, grade e seleção por área;
-- criação rápida de nós com duplo clique;
-- movimentação em grupo, edição, duplicação, exclusão e redimensionamento direto;
-- conexões direcionadas por arraste e sessões em fluxograma;
-- regiões móveis/redimensionáveis, agrupamento hierárquico e nós de referência;
-- zoom semântico, culling e `Ver tudo`;
-- minimapa navegável;
-- busca global com `Ctrl+K`;
-- undo/redo e atalhos;
-- painel de sessões com progresso, foco, reinício e resumo exportável;
-- imagens por arquivo ou link externo HTTPS;
-- orçamento inteligente de renderização para mapas extremamente densos;
-- biblioteca persistente de templates prontos e personalizados;
-- etiquetas pesquisáveis, filtro por tipo e edição em massa;
-- visão de roteiro ordenada pelo fluxo, com progresso e impressão/PDF;
-- onboarding, central de atalhos, diagnóstico estrutural e recuperação de falhas;
-- player MP3 persistente e biblioteca por pastas;
-- backend Tauri/SQLite e fallback web para desenvolvimento;
-- autosave em lote, sem bloquear o canvas;
-- exportação e importação segura no formato `.rpgcanvas`;
-- backups automáticos com cópia mais recente e histórico rotativo;
-- recuperação pelo backup quando os dados principais não podem ser lidos;
-- importação não destrutiva: IDs são recriados quando já existe um projeto igual.
-- conexões selecionáveis com edição de texto, tipo, cor e direção;
-- menu de clique direito para criar, duplicar, referenciar e excluir elementos.
+**Causa raiz encontrada:** a versão anterior desenhava o mapa em **três camadas sobrepostas** ao mesmo tempo — um Canvas2D nativo visível (sem eventos), um SVG React visível (sem eventos) e um PixiJS transparente por cima recebendo todos os cliques. Durante um arraste, apenas a camada invisível (PixiJS) se movia; as duas camadas visíveis só eram atualizadas quando o gesto terminava. Por isso as caixas apareciam mas praticamente não podiam ser manipuladas: nada se movia visualmente até soltar o botão do mouse, quando tudo "pulava" de uma vez.
 
-### Gestos do canvas
+**Correção:** PixiJS e a camada SVG duplicada foram **removidos por completo**. Hoje existe **um único `<canvas>` Canvas2D**, visível e interativo, que é a única fonte de verdade para renderização, coordenadas (`screenToWorld`/`worldToScreen`), seleção, hit-testing, movimento, redimensionamento, zoom, câmera e conexões (`src/canvas/CanvasEngine.ts`). O que a pessoa vê durante qualquer gesto já é a posição real, em tempo real — não existe mais uma camada invisível fora de sincronia com o que aparece na tela.
 
-- arraste o fundo para selecionar várias caixas;
-- use `Shift` para somar caixas à seleção;
-- arraste qualquer caixa selecionada para mover o conjunto;
-- puxe a alça no canto inferior direito para redimensionar;
-- puxe o ponto lateral direito de uma caixa até outra para conectar;
-- arraste o título de uma região para mover a região, suas filhas e seus nós;
-- segure `Espaço` e arraste para mover a câmera.
+Veja o detalhe técnico em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-### Segurança dos projetos
+### Lista objetiva do que foi corrigido
 
-- use **Exportar** dentro do projeto para criar um arquivo portátil `.rpgcanvas`;
-- use **Importar** na tela inicial para abrir uma campanha exportada;
-- use **Backups** para recuperar a versão mais recente ou uma cópia histórica;
-- o aplicativo mantém até 10 cópias históricas por projeto, com intervalo mínimo de 10 minutos;
-- arquivos importados são validados antes de qualquer gravação.
+- Removida a arquitetura de 3 camadas (Canvas2D nativo + SVG + PixiJS transparente); `pixi.js` foi removido do `package.json`.
+- Arrastar uma caixa agora move o desenho em tempo real, não só ao soltar o mouse.
+- A área clicável de cada caixa/região/alça é exatamente igual à área desenhada (mesmo cálculo de geometria alimenta desenho e hit-testing).
+- Zoom com a roda do mouse ancorado no cursor (o ponto do mundo sob o cursor não se move).
+- Pan com botão do meio e com `Espaço + arrastar`.
+- Seleção múltipla por `Shift+clique` e por caixa de seleção arrastada no fundo; arrastar a seleção move todas as caixas juntas.
+- Alças de redimensionamento visíveis e funcionais em tempo real, para caixas e regiões.
+- Alça de conexão visível na caixa selecionada; arrastar até outra caixa cria a conexão, com a linha aparecendo durante o gesto.
+- Clicar numa conexão a seleciona (para editar tipo/rótulo/cor ou excluir).
+- `Esc` cancela um gesto em andamento (rascunho de conexão, redimensionamento, arraste, caixa de seleção) sem aplicá-lo.
+- `fitAll()` (botão "Ver tudo") nunca mais roda contra um viewport `0×0`/`1×1`; espera o `ResizeObserver` reportar um tamanho real (≥100px).
+- Redimensionar a janela atualiza o viewport sem resetar a posição da câmera; uma animação de câmera em andamento nunca sobrescreve `viewportWidth`/`viewportHeight` com valores antigos.
+- Caixas nunca são escondidas por completo por causa do zoom — em zoom distante elas continuam visíveis, coloridas e clicáveis, só o conteúdo interno (texto secundário, imagem) é simplificado.
+- Versão do app visível na barra superior, lida de uma única fonte (`src/version.ts`).
+- `BUILD_WINDOWS.bat` agora verifica Node.js, npm, Rust, Cargo, `link.exe`, Visual Studio Build Tools e WebView2 **antes** de iniciar uma build de vários minutos; se o linker estiver ausente, localiza o Visual Studio via `vswhere.exe` e carrega `vcvars64.bat` automaticamente, ou mostra o comando exato de instalação via `winget`.
+- Novo `ABRIR.bat` para abrir o executável já compilado sem precisar do modo de desenvolvimento.
 
-## Rodar a interface
+Tudo que já funcionava foi preservado: projetos de exemplo, autosave, indicador de salvamento, backups automáticos, recuperação de projeto corrompido, undo/redo, busca `Ctrl+K`, importação/exportação `.rpgcanvas`, templates, referências entre caixas, modo de sessão e progresso, minimapa, player de músicas locais, diagnóstico do projeto e o tema escuro.
+
+## Rodar em desenvolvimento
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Rodar como desktop
-
-Pré-requisitos: Node.js, Rust e dependências nativas do Tauri 2.
+Como desktop (Tauri):
 
 ```bash
 npm install
 npm run tauri dev
 ```
 
-No Windows, também é possível usar `INSTALAR.bat` e depois `ABRIR_DEV.bat`.
+No Windows: `INSTALAR.bat` primeiro, depois `ABRIR_DEV.bat` (modo desenvolvimento) ou `BUILD_WINDOWS.bat` (gera o `.exe`).
 
-## Validar
+## Compilar o executável no Windows
 
-```bash
-npm test
-npm run build
+1. Execute `INSTALAR.bat` (verifica Node.js/npm/Rust e instala as dependências).
+2. Execute `BUILD_WINDOWS.bat` (verifica o linker/Visual Studio/WebView2 e compila).
+3. Execute `ABRIR.bat` para abrir o aplicativo compilado.
+
+### Caminho exato do executável
+
+```
+src-tauri\target\release\RPG Canvas Studio.exe                                   (executável portátil)
+src-tauri\target\release\bundle\nsis\RPG Canvas Studio_1.1.0_x64-setup.exe       (instalador NSIS)
+src-tauri\target\release\bundle\msi\RPG Canvas Studio_1.1.0_x64_en-US.msi        (instalador MSI)
 ```
 
-Para gerar o instalador/`.exe` no Windows, execute `BUILD_WINDOWS.bat`. O resultado fica em `src-tauri\target\release\bundle\`.
+Se `link.exe` não for encontrado e o Visual Studio Build Tools não estiver instalado, `BUILD_WINDOWS.bat` para **antes** de iniciar a compilação e mostra:
 
-Veja [Arquitetura](docs/ARCHITECTURE.md), [schema SQLite](docs/SCHEMA.md), [fases](docs/PHASES.md), [estado da implementação](docs/IMPLEMENTATION_STATUS.md) e [release 1.0](docs/RELEASE_1.0.md).
+```
+winget install --id Microsoft.VisualStudio.2022.BuildTools -e --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+```
+
+## Testes
+
+```bash
+npm test           # 52 testes automatizados (Vitest)
+npm run build      # TypeScript estrito + build de produção (Vite)
+npx playwright install chromium   # uma vez, para baixar o navegador de teste
+npm run test:e2e   # teste visual/end-to-end (Playwright)
+```
+
+### Resultado dos testes (ambiente de desenvolvimento Linux)
+
+- **52/52 testes unitários e de integração aprovados** (`npm test`), cobrindo:
+  câmera/viewport começando em `0×0`/`1×1` e recebendo tamanho real depois; `fitAll()` acionado só após o `ResizeObserver`; importação do arquivo de exemplo `Academia-Magica.rpgcanvas` com a contagem exata de 22 caixas / 9 regiões / 11 conexões; arrastar uma caixa e confirmar a mudança de coordenadas via callback; redimensionar uma caixa; seleção múltipla por caixa de seleção; movimento em grupo; criação de conexão pela alça; seleção de conexão por clique; zoom ancorado no cursor; pan; redimensionar a janela sem perder a posição da câmera; clique no minimapa navegando para o ponto certo; região com elementos filhos se movendo junto (nível de domínio); undo/redo de movimentação (nível de domínio); caixa permanecendo clicável em zoom bem distante (overview); cancelamento de gesto com `Esc`.
+- **TypeScript estrito (`tsc -b`) sem erros.**
+- **Build de produção (Vite) concluída com sucesso**, bundle sem `pixi.js` (redução de tamanho no chunk principal).
+- **Teste visual/end-to-end (Playwright) aprovado**: abre o app, importa `examples/Academia-Magica.rpgcanvas`, clica numa caixa real, arrasta com eventos de ponteiro reais do navegador, tira screenshot antes/depois, confirma que a caixa mudou de posição (com as conexões acompanhando visualmente), espera o autosave, recarrega a página do zero, reabre o projeto pela lista e confirma que a nova posição foi persistida. Screenshots em `test-results/academia-magica-before-drag.png` e `academia-magica-after-drag.png` após rodar `npm run test:e2e`.
+- **Build Rust/Tauri para `.exe` não foi compilada neste ambiente** (este é um container Linux; a linkagem final do executável Windows precisa rodar em uma máquina Windows ou CI Windows — é exatamente o que `BUILD_WINDOWS.bat` automatiza, com todas as verificações de pré-requisito).
+
+### Arquivo de exemplo para validação
+
+`examples/Academia-Magica.rpgcanvas` — 22 caixas, 9 regiões (incluindo regiões aninhadas: Ala Norte/Ala Sul dentro de Campus, duas sessões dentro do bloco de Sessões) e 11 conexões, com duas caixas propositalmente sobrepostas (para confirmar que sobreposição não faz o resto do mapa desaparecer). Use **Importar** na tela inicial para abri-lo. Este arquivo também é usado pelo teste Playwright.
+
+> Nota: este é um arquivo gerado para validar o app com a mesma forma descrita (contagens de caixas/regiões/conexões) do arquivo real do autor do projeto, já que o arquivo original `Academia-Magica.rpgcanvas` da máquina do autor não estava disponível neste ambiente de desenvolvimento. A importação, validação de schema, renderização, edição e persistência são as mesmas para qualquer arquivo `.rpgcanvas` — inclusive o original.
+
+## Limitações restantes
+
+- O `.exe` final e os instaladores NSIS/MSI não puderam ser compilados neste ambiente Linux (o Tauri/Cargo precisam do toolchain do Windows). Rode `BUILD_WINDOWS.bat` em uma máquina Windows para gerar o instalador final — o script verifica todos os pré-requisitos antes de começar.
+- O teste end-to-end usa o arquivo de exemplo gerado (`examples/Academia-Magica.rpgcanvas`), não o arquivo original do autor, que não estava disponível neste ambiente. Recomenda-se rodar `npm run test:e2e` novamente contra o arquivo `.rpgcanvas` real assim que possível — o fluxo de importação é idêntico.
+- Regiões só podem ser selecionadas/arrastadas pela faixa do título (comportamento preservado da versão anterior); clicar no meio de uma região vazia inicia uma seleção de área, não seleciona a região.
+
+## Documentação
+
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Schema SQLite](docs/SCHEMA.md)
+- [Fases do projeto](docs/PHASES.md)
+- [Estado da implementação](docs/IMPLEMENTATION_STATUS.md)

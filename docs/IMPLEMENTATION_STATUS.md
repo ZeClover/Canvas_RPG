@@ -1,9 +1,9 @@
-# Estado da implementação — v1.0.0
+# Estado da implementação — v1.1.0
 
-## Funcional no MVP
+## Funcional
 
 - projetos locais;
-- canvas PixiJS/WebGL com pan, zoom e zoom ao redor do cursor;
+- canvas Canvas2D único (visível e interativo, sem camadas separadas) com pan, zoom e zoom ao redor do cursor;
 - duplo clique para criar e escrever uma caixa imediatamente;
 - seleção múltipla por Shift ou área, mover em grupo, copiar, colar, duplicar e excluir;
 - redimensionamento direto de nós por alça, preservado como uma operação de undo;
