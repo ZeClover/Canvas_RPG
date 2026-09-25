@@ -34,6 +34,7 @@ export const RELATION_TYPE_CONFIG: Record<RelationType, RelationTypeConfig> = {
   unlocks_on_success: { label: "desbloqueia se concluir", color: "#34d399", style: "solid", arrow: "diamond" },
   unlocks_on_fail: { label: "desbloqueia se falhar", color: "#ef4444", style: "dashed", arrow: "diamond" },
   preys_on: { label: "caça", color: "#f87171", style: "solid", arrow: "triangle" },
+  addressed_to: { label: "endereçada a", color: "#38bdf8", style: "dotted", arrow: "triangle" },
   custom: { label: "personalizada", color: "#8290ad", style: "solid", arrow: "triangle" },
 };
 

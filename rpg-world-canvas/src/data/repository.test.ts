@@ -2,7 +2,20 @@ import { beforeEach, describe, expect, it } from "vitest";
 import "../test/indexedDbTestEnv";
 import { resetIndexedDb } from "../test/indexedDbTestEnv";
 import { createDemoCampaign } from "./seed";
-import { createCampaign, listBackups, listCampaigns, loadCampaignData, restoreBackup, saveCampaignDiff, saveManualBackup, seedCampaign } from "./repository";
+import {
+  createCampaign,
+  createUniverseLink,
+  deleteCampaign,
+  deleteUniverseLink,
+  listBackups,
+  listCampaigns,
+  listUniverseLinks,
+  loadCampaignData,
+  restoreBackup,
+  saveCampaignDiff,
+  saveManualBackup,
+  seedCampaign,
+} from "./repository";
 
 describe("repository (IndexedDB real)", () => {
   beforeEach(() => {
@@ -75,5 +88,45 @@ describe("repository (IndexedDB real)", () => {
     const restored = await restoreBackup(latest.id);
     expect(restored.entities.length).toBe(demo.entities.length);
     expect((await loadCampaignData(demo.campaign.id)).entities.length).toBe(demo.entities.length);
+  });
+
+  it("cria, lista e remove uma ligação do Multiverse Engine entre duas campanhas", async () => {
+    const demoA = createDemoCampaign();
+    const demoB = createDemoCampaign();
+    await Promise.all([createCampaign(demoA.campaign), createCampaign(demoB.campaign)]);
+
+    const link = {
+      id: "universelink_test_1",
+      fromCampaignId: demoA.campaign.id,
+      toCampaignId: demoB.campaign.id,
+      description: "Mesma cosmologia, séculos de diferença",
+      createdAt: Date.now(),
+    };
+    await createUniverseLink(link);
+
+    const links = await listUniverseLinks();
+    expect(links).toHaveLength(1);
+    expect(links[0]).toEqual(link);
+
+    await deleteUniverseLink(link.id);
+    expect(await listUniverseLinks()).toHaveLength(0);
+  });
+
+  it("apagar uma campanha remove também as ligações do Multiverse Engine que a referenciam", async () => {
+    const demoA = createDemoCampaign();
+    const demoB = createDemoCampaign();
+    await Promise.all([createCampaign(demoA.campaign), createCampaign(demoB.campaign)]);
+    await createUniverseLink({
+      id: "universelink_test_2",
+      fromCampaignId: demoA.campaign.id,
+      toCampaignId: demoB.campaign.id,
+      description: "",
+      createdAt: Date.now(),
+    });
+
+    await deleteCampaign(demoA.campaign.id);
+
+    expect(await listUniverseLinks()).toHaveLength(0);
+    expect((await listCampaigns()).map((c) => c.id)).not.toContain(demoA.campaign.id);
   });
 });

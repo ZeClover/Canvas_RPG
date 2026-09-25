@@ -28,6 +28,7 @@ export function createDefaultViews(campaignId: string): View[] {
     view("Narrativa", "🎬", ["scene", "theme", "foreshadowing"]),
     view("Criaturas", "🐾", ["creature"]),
     view("Transcrições", "📝", ["transcript"]),
+    view("Mensagens", "✉️", ["message"]),
   ];
 }
 
@@ -127,6 +128,14 @@ export function createDemoCampaign(): CampaignData {
       visibility: "revealed",
     },
     { key: "e_alarm", kind: "event", title: "Alarme na Dungeon", x: 500, y: 680, summary: "Sinos tocam no meio da noite.", groupKey: "campus" },
+    {
+      key: "msg_warning", kind: "message", title: "Bilhete: \"Fiquem longe da runa\"", x: 900, y: 680, summary: "Vivian avisa Kaleb para não mexer na runa sozinho.", groupKey: "campus",
+      fields: { medium: "Carta", deliveryStatus: "Entregue", content: "Kaleb, não toque na runa sozinho. Fale comigo antes.", sentDate: "Depois da Sessão 02" },
+    },
+    {
+      key: "msg_intercepted", kind: "message", title: "Aviso da Ordem sobre a Dungeon", x: 1240, y: 680, summary: "Um aviso urgente da Ordem dos Selos nunca chegou ao destino.", groupKey: "campus",
+      fields: { medium: "Mensageiro", deliveryStatus: "Interceptada", content: "A Dungeon está instável, redobrem a vigilância esta noite.", sentDate: "Na noite do alarme" },
+    },
     { key: "sess_01", kind: "session", title: "Sessão 01 · A Primeira Aula", x: 3000, y: -180, summary: "Abertura da campanha.", groupKey: "sessions" },
     { key: "sess_02", kind: "session", title: "Sessão 02 · A Dungeon Desperta", x: 3400, y: -180, summary: "O alarme toca.", groupKey: "sessions" },
     { key: "region_vale", kind: "region", title: "Vale de Ashgrove", x: -180, y: 1420, summary: "A região ao redor da Academia, entre colinas e a floresta velha.", groupKey: "region" },
@@ -260,6 +269,10 @@ export function createDemoCampaign(): CampaignData {
     { from: "foreshadowing_ring", to: "item_ring", type: "points_to" },
     { from: "foreshadowing_ring", to: "l_dungeon", type: "points_to" },
     { from: "transcript_sess02", to: "sess_02", type: "belongs_to" },
+    { from: "msg_warning", to: "n_vivian", type: "originated_from" },
+    { from: "msg_warning", to: "n_kaleb", type: "addressed_to" },
+    { from: "msg_intercepted", to: "f_order", type: "originated_from" },
+    { from: "msg_intercepted", to: "n_potter", type: "addressed_to" },
   ];
   const relations: Relation[] = relationSeeds.map((seed) => ({
     id: createId("relation"),

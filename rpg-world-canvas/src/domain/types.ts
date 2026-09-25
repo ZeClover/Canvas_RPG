@@ -39,6 +39,12 @@ export type EntityKind =
   // entity (fields hold the trigger/action) so it's searchable, sits on
   // the canvas and follows the same undo/redo path as everything else.
   | "rule"
+  // World Communication System (Fase 7): a letter/messenger/spell that
+  // travels between two existing entities — who sent it and who it's
+  // addressed to are the same relation graph as everything else
+  // (originated_from/addressed_to), never a parallel sender/recipient
+  // field.
+  | "message"
   // Structural kind: a resizable/draggable area on the canvas that other
   // entities can belong to (via their groupId). Rendered as a bounded
   // region, not a card — everything else about it (tags, search, views,
@@ -50,7 +56,7 @@ export const ENTITY_KINDS: EntityKind[] = [
   "location", "city", "region", "faction", "creature", "item",
   "secret", "knowledge", "clue", "rumor", "decision", "possibility",
   "scene", "project", "resource", "theme", "foreshadowing",
-  "transcript", "universe", "rule", "group",
+  "transcript", "universe", "rule", "message", "group",
 ];
 
 export type Visibility = "gm_only" | "revealed" | "partial";
@@ -60,14 +66,14 @@ export type RelationType =
   | "member_of" | "offers" | "involves" | "happens_at" | "reveals"
   | "caused" | "points_to" | "knows_about" | "originated_from"
   | "improves" | "belongs_to" | "leads_to" | "blocks" | "requires"
-  | "unlocks_on_success" | "unlocks_on_fail" | "preys_on"
+  | "unlocks_on_success" | "unlocks_on_fail" | "preys_on" | "addressed_to"
   | "custom";
 
 export const RELATION_TYPES: RelationType[] = [
   "knows", "hates", "loves", "trusts", "fears", "works_for", "member_of",
   "offers", "involves", "happens_at", "reveals", "caused", "points_to",
   "knows_about", "originated_from", "improves", "belongs_to", "leads_to",
-  "blocks", "requires", "unlocks_on_success", "unlocks_on_fail", "preys_on", "custom",
+  "blocks", "requires", "unlocks_on_success", "unlocks_on_fail", "preys_on", "addressed_to", "custom",
 ];
 
 export interface Entity {

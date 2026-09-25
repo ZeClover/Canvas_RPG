@@ -11,6 +11,7 @@ import { CampaignHealthPanel } from "./components/panels/CampaignHealthPanel";
 import { CausalityPanel } from "./components/panels/CausalityPanel";
 import { EconomyResourcesPanel } from "./components/panels/EconomyResourcesPanel";
 import { KnowledgeEnginePanel } from "./components/panels/KnowledgeEnginePanel";
+import { MessagesPanel } from "./components/panels/MessagesPanel";
 import { ModulesPanel } from "./components/panels/ModulesPanel";
 import { MysteryBoardPanel } from "./components/panels/MysteryBoardPanel";
 import { PlayerKnowledgeViewPanel } from "./components/panels/PlayerKnowledgeViewPanel";
@@ -24,10 +25,13 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { Topbar, type ToolMenuItem } from "./components/Topbar";
 import {
   createCampaign,
+  createUniverseLink,
+  deleteUniverseLink,
   exportCampaignFile,
   importCampaignFromArchive,
   listBackups,
   listCampaigns,
+  listUniverseLinks,
   loadCampaignData,
   readCampaignFile,
   restoreBackup,
@@ -36,7 +40,7 @@ import {
 } from "./data/repository";
 import { createDemoCampaign } from "./data/seed";
 import type { ModuleKey } from "./domain/modules";
-import type { CameraState, Campaign, EntityKind, WorldBounds, WorldPoint } from "./domain/types";
+import type { CameraState, Campaign, EntityKind, UniverseLink, WorldBounds, WorldPoint } from "./domain/types";
 import { CampaignStore } from "./state/campaignStore";
 import { useCampaign } from "./state/useCampaign";
 
@@ -46,15 +50,17 @@ const CanvasSurface = lazy(() => import("./canvas/CanvasSurface").then((module) 
 export default function App() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [backups, setBackups] = useState<BackupInfo[]>([]);
+  const [universeLinks, setUniverseLinks] = useState<UniverseLink[]>([]);
   const [store, setStore] = useState<CampaignStore | null>(null);
   const [loading, setLoading] = useState(true);
   const [homeError, setHomeError] = useState("");
 
   useEffect(() => {
-    void Promise.allSettled([listCampaigns(), listBackups()])
-      .then(async ([campaignResult, backupResult]) => {
+    void Promise.allSettled([listCampaigns(), listBackups(), listUniverseLinks()])
+      .then(async ([campaignResult, backupResult, universeLinksResult]) => {
         const availableBackups = backupResult.status === "fulfilled" ? backupResult.value : [];
         setBackups(availableBackups);
+        setUniverseLinks(universeLinksResult.status === "fulfilled" ? universeLinksResult.value : []);
         if (campaignResult.status !== "fulfilled") {
           setHomeError("Não foi possível ler o banco local.");
           return;
@@ -110,6 +116,16 @@ export default function App() {
     setStore(new CampaignStore(data));
   }
 
+  async function addUniverseLink(link: UniverseLink) {
+    await createUniverseLink(link);
+    setUniverseLinks((items) => [link, ...items]);
+  }
+
+  async function removeUniverseLink(id: string) {
+    await deleteUniverseLink(id);
+    setUniverseLinks((items) => items.filter((link) => link.id !== id));
+  }
+
   async function leaveWorkspace() {
     if (!store) return;
     await store.saveNow();
@@ -133,6 +149,9 @@ export default function App() {
           onCreate={addCampaign}
           onImport={importCampaign}
           onRestore={recoverCampaign}
+          universeLinks={universeLinks}
+          onCreateUniverseLink={(link) => void addUniverseLink(link)}
+          onDeleteUniverseLink={(id) => void removeUniverseLink(id)}
           externalError={homeError}
         />
       )}
@@ -155,6 +174,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [rumorGeneratorOpen, setRumorGeneratorOpen] = useState(false);
   const [campaignHealthOpen, setCampaignHealthOpen] = useState(false);
   const [playerViewOpen, setPlayerViewOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
@@ -252,6 +272,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     { key: "rumor-generator", label: "Gerador de rumores", icon: Icons.chat, onClick: () => setRumorGeneratorOpen(true), visible: hasModule("rumor_engine") },
     { key: "campaign-health", label: "Saúde da campanha", icon: Icons.pulse, onClick: () => setCampaignHealthOpen(true), visible: hasModule("campaign_health") },
     { key: "player-view", label: "O que os jogadores sabem", icon: Icons.eye, onClick: () => setPlayerViewOpen(true), visible: hasModule("player_knowledge_view") },
+    { key: "messages", label: "Cartas & mensageiros", icon: Icons.mail, onClick: () => setMessagesOpen(true), visible: hasModule("world_communication") },
     { key: "modules", label: "Módulos desta campanha", icon: Icons.toggles, onClick: () => setModulesOpen(true), visible: true },
   ];
   const tools: ToolMenuItem[] = allTools.filter((tool) => tool.visible);
@@ -437,6 +458,14 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
         <PlayerKnowledgeViewPanel
           entities={state.entities}
           onClose={() => setPlayerViewOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {messagesOpen && (
+        <MessagesPanel
+          entities={state.entities}
+          relations={state.relations}
+          onClose={() => setMessagesOpen(false)}
           onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
         />
       )}

@@ -14,6 +14,7 @@ const PHASE_LABEL: Record<number, string> = {
   4: "Fase 4 — Mundo, projetos e economia",
   5: "Fase 5 — Cenas, presságios, ecologia e rumores",
   6: "Fase 6 — Transcrições, saúde da campanha e visão dos jogadores",
+  7: "Fase 7 — Comunicação entre NPCs e facções",
 };
 
 /** Every specialized tool from Fase 2 onward is opt-in per campaign — a

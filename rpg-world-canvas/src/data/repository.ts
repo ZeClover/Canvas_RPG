@@ -1,4 +1,4 @@
-import type { Campaign, CampaignData, Entity, Relation, View } from "../domain/types";
+import type { Campaign, CampaignData, Entity, Relation, UniverseLink, View } from "../domain/types";
 import { createId } from "../domain/id";
 import {
   MAX_ARCHIVE_BYTES,
@@ -98,16 +98,37 @@ export async function saveCampaignDiff(diff: CampaignSaveDiff): Promise<void> {
   ]);
 }
 
+/** Multiverse Engine (Fase 7): links between campaigns are their own
+ * home-level store — never a field on Campaign or an Entity — so linking
+ * two universes never touches either campaign's own data or its module
+ * toggles. */
+export async function listUniverseLinks(): Promise<UniverseLink[]> {
+  return dbGetAll<UniverseLink>(STORES.universeLinks);
+}
+
+export async function createUniverseLink(link: UniverseLink): Promise<void> {
+  await dbPut(STORES.universeLinks, link);
+}
+
+export async function deleteUniverseLink(linkId: string): Promise<void> {
+  await dbDelete(STORES.universeLinks, linkId);
+}
+
 export async function deleteCampaign(campaignId: string): Promise<void> {
-  const [entities, relations, views] = await Promise.all([
+  const [entities, relations, views, universeLinks] = await Promise.all([
     dbGetAllByIndex<Entity>(STORES.entities, "campaignId", campaignId),
     dbGetAllByIndex<Relation>(STORES.relations, "campaignId", campaignId),
     dbGetAllByIndex<View>(STORES.views, "campaignId", campaignId),
+    dbGetAll<UniverseLink>(STORES.universeLinks),
   ]);
+  const orphanedLinkIds = universeLinks
+    .filter((link) => link.fromCampaignId === campaignId || link.toCampaignId === campaignId)
+    .map((link) => link.id);
   await Promise.all([
     dbDeleteMany(STORES.entities, entities.map((entity) => entity.id)),
     dbDeleteMany(STORES.relations, relations.map((relation) => relation.id)),
     dbDeleteMany(STORES.views, views.map((view) => view.id)),
+    dbDeleteMany(STORES.universeLinks, orphanedLinkIds),
     dbDelete(STORES.campaigns, campaignId),
   ]);
 }

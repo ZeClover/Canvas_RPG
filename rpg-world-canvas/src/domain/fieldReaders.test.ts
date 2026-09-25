@@ -3,6 +3,7 @@ import { defaultEcologyFields, readEcologyFields } from "./ecologyFields";
 import { defaultEconomyFields, readEconomyFields } from "./economyFields";
 import { defaultEventFields, readEventFields } from "./eventFields";
 import { defaultForeshadowingFields, readForeshadowingFields } from "./foreshadowingFields";
+import { defaultMessageFields, readMessageFields } from "./messageFields";
 import { defaultNpcFields, readNpcFields } from "./npcFields";
 import { defaultProjectFields, projectProgress, readProjectFields } from "./projectFields";
 import { defaultQuestFields, readQuestFields } from "./questFields";
@@ -164,5 +165,22 @@ describe("leitores de campos por tipo", () => {
 
   it("transcrição: um formato de origem desconhecido cai no padrão", () => {
     expect(readTranscriptFields({ sourceFormat: "docx" }).sourceFormat).toBe(defaultTranscriptFields().sourceFormat);
+  });
+
+  it("mensagem: retorna os padrões para um bag vazio", () => {
+    expect(readMessageFields({})).toEqual(defaultMessageFields());
+  });
+
+  it("mensagem: lê valores presentes e ignora tipos incompatíveis", () => {
+    const fields = readMessageFields({ medium: "Mensageiro", deliveryStatus: "Interceptada", content: "Fujam da cidade", sentDate: 42 });
+    expect(fields.medium).toBe("Mensageiro");
+    expect(fields.deliveryStatus).toBe("Interceptada");
+    expect(fields.content).toBe("Fujam da cidade");
+    expect(fields.sentDate).toBe(defaultMessageFields().sentDate);
+  });
+
+  it("mensagem: um meio ou status desconhecido cai no padrão", () => {
+    expect(readMessageFields({ medium: "Pombo-correio" }).medium).toBe(defaultMessageFields().medium);
+    expect(readMessageFields({ deliveryStatus: "Extraviada" }).deliveryStatus).toBe(defaultMessageFields().deliveryStatus);
   });
 });

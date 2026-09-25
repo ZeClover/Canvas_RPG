@@ -10,6 +10,7 @@ import { Icons } from "./Icons";
 import { EcologySection } from "./sections/EcologySection";
 import { EconomySection } from "./sections/EconomySection";
 import { ForeshadowingSection } from "./sections/ForeshadowingSection";
+import { MessageSection } from "./sections/MessageSection";
 import { NpcSection } from "./sections/NpcSection";
 import { ProjectSection } from "./sections/ProjectSection";
 import { QuestSection } from "./sections/QuestSection";
@@ -186,6 +187,7 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
       {showKindSection && entity.kind === "transcript" && (
         <TranscriptSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} onCreateFromSelection={(kind, title, summary) => onCreateEntityFromTranscript(kind, title, summary)} />
       )}
+      {showKindSection && entity.kind === "message" && <MessageSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
 
       <div className="size-fields">
         <label>Largura<input value={Math.round(entity.width)} inputMode="numeric" onChange={(event) => onUpdate({ width: Math.max(80, Number(event.target.value) || entity.width) })} /></label>

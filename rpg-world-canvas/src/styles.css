@@ -92,6 +92,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .backup-row small { color: #748096; font-size: 9px; }
 .hidden-input { display: none; }
 
+.multiverse-form { display: grid; gap: 10px; margin-bottom: 18px; }
+.multiverse-form label { display: grid; gap: 6px; margin: 0; color: #8994aa; font-size: 10px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
+.multiverse-form select, .multiverse-form input { height: 34px; padding: 0 8px; color: #dce1ed; background: #0c1019; border: 1px solid #283044; border-radius: 8px; font-size: 11px; font-weight: 450; text-transform: none; letter-spacing: 0; }
+.multiverse-form .primary-button { justify-self: start; }
+
 /* Workspace */
 .workspace-screen { position: absolute; inset: 0; display: grid; grid-template-rows: 62px minmax(0, 1fr); background: #0a0d14; }
 .topbar { position: relative; z-index: 20; display: grid; grid-template-columns: 1fr minmax(320px, 560px) 1fr; align-items: center; gap: 20px; padding: 0 16px; background: rgba(13,17,27,.97); border-bottom: 1px solid var(--border); box-shadow: 0 8px 28px rgba(0,0,0,.18); }

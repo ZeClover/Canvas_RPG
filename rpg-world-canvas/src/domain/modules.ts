@@ -18,7 +18,8 @@ export type ModuleKey =
   | "knowledge_engine" | "mystery_board" | "causality_engine" | "rules_engine"
   | "settlement_engine" | "project_engine" | "economy_engine" | "resource_engine"
   | "scene_composer" | "theme_foreshadowing" | "ecology_engine" | "rumor_engine"
-  | "transcript_engine" | "campaign_health" | "player_knowledge_view";
+  | "transcript_engine" | "campaign_health" | "player_knowledge_view"
+  | "world_communication";
 
 export interface ModuleConfig {
   key: ModuleKey;
@@ -47,6 +48,7 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   { key: "transcript_engine", label: "Transcrições", description: "Importa TXT/SRT/VTT, busca por palavra-chave e converte trechos em elementos do Canvas.", phase: 6 },
   { key: "campaign_health", label: "Campaign Health Dashboard", description: "Painel de saúde da campanha: contagens, pistas soltas, recursos críticos, regras desativadas.", phase: 6 },
   { key: "player_knowledge_view", label: "Player Knowledge View", description: "O que os jogadores sabem oficialmente, a partir da visibilidade de cada elemento.", phase: 6 },
+  { key: "world_communication", label: "World Communication System", description: "Cartas, mensageiros e feitiços de comunicação entre NPCs/facções, com meio, status de entrega e conteúdo.", phase: 7 },
 ];
 
 export const ALL_MODULE_KEYS: ModuleKey[] = MODULE_REGISTRY.map((module) => module.key);
@@ -83,6 +85,7 @@ export const MODULE_FOR_KIND: Partial<Record<EntityKind, ModuleKey>> = {
   creature: "ecology_engine",
   rumor: "rumor_engine",
   transcript: "transcript_engine",
+  message: "world_communication",
 };
 
 export function isKindSectionEnabled(kind: EntityKind, enabledModules: ModuleKey[]): boolean {

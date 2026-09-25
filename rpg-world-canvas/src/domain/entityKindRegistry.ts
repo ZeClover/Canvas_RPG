@@ -36,6 +36,7 @@ export const ENTITY_KIND_CONFIG: Record<EntityKind, EntityKindConfig> = {
   transcript: { label: "Transcrição", icon: "📝", color: "#8290ad", width: 260, height: 140 },
   universe: { label: "Universo", icon: "🌌", color: "#7c3aed", width: 260, height: 140 },
   rule: { label: "Regra", icon: "🧩", color: "#fb923c", width: 240, height: 126 },
+  message: { label: "Mensagem", icon: "✉️", color: "#38bdf8", width: 240, height: 126 },
   group: { label: "Grupo", icon: "🗂️", color: "#7767e9", width: 920, height: 620 },
 };
 

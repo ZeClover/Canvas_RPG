@@ -2,8 +2,9 @@ import { useRef, useState } from "react";
 import type { BackupInfo } from "../data/repository";
 import { createId } from "../domain/id";
 import { defaultEnabledModules } from "../domain/modules";
-import type { Campaign } from "../domain/types";
+import type { Campaign, UniverseLink } from "../domain/types";
 import { Icons } from "./Icons";
+import { MultiverseLinksPanel } from "./panels/MultiverseLinksPanel";
 
 interface CampaignHomeProps {
   campaigns: Campaign[];
@@ -12,15 +13,19 @@ interface CampaignHomeProps {
   onImport: (file?: File) => Promise<void>;
   backups: BackupInfo[];
   onRestore: (backup: BackupInfo) => Promise<void>;
+  universeLinks: UniverseLink[];
+  onCreateUniverseLink: (link: UniverseLink) => void;
+  onDeleteUniverseLink: (id: string) => void;
   externalError?: string;
 }
 
 const CAMPAIGN_COLORS = ["#a78bfa", "#38bdf8", "#34d399", "#fb923c", "#f43f5e", "#facc15"];
 
-export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, onRestore, externalError = "" }: CampaignHomeProps) {
+export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, onRestore, universeLinks, onCreateUniverseLink, onDeleteUniverseLink, externalError = "" }: CampaignHomeProps) {
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [backupsOpen, setBackupsOpen] = useState(false);
+  const [multiverseOpen, setMultiverseOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -100,6 +105,7 @@ export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, o
               }}
             />
             {backups.length > 0 && <button className="ghost-button" disabled={busy} onClick={() => setBackupsOpen(true)}><Icons.shield /> Backups</button>}
+            <button className="ghost-button" disabled={busy} onClick={() => setMultiverseOpen(true)}><Icons.link /> Multiverso</button>
             <button className="ghost-button" disabled={busy} onClick={() => fileRef.current?.click()}><Icons.upload /> {busy ? "Processando…" : "Importar"}</button>
             <button className="primary-button" onClick={() => setCreating(true)}><Icons.plus /> Nova campanha</button>
           </div>
@@ -170,6 +176,16 @@ export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, o
             </div>
           </section>
         </div>
+      )}
+
+      {multiverseOpen && (
+        <MultiverseLinksPanel
+          campaigns={campaigns}
+          links={universeLinks}
+          onClose={() => setMultiverseOpen(false)}
+          onCreateLink={onCreateUniverseLink}
+          onDeleteLink={onDeleteUniverseLink}
+        />
       )}
     </main>
   );
