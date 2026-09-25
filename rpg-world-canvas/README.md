@@ -129,14 +129,29 @@ As duas últimas peças do plano original de 7 fases:
 
 ## O que ainda não existe
 
-Todas as 7 fases do plano original foram implementadas. O que resta é puramente deferido por escopo (não por dificuldade — já resolvido no RPG Canvas Studio e portável quando quiser): guias de alinhamento (snap), modo foco, exportar imagem PNG, empacotamento como `.exe` desktop via Tauri.
+Todas as 7 fases do plano original foram implementadas. O que resta é puramente deferido por escopo (não por dificuldade): guias de alinhamento (snap), modo foco, exportar imagem PNG.
 
-## Rodar
+## Rodar como app web (desenvolvimento)
 
 ```bash
 npm install
 npm run dev
 ```
+
+## Empacotar como aplicativo desktop (Windows)
+
+O mesmo caminho que o RPG Canvas Studio já resolvia — Tauri (`src-tauri/`) — agora existe aqui também. Não é um backend novo: o app inteiro já roda em cima de IndexedDB dentro do WebView, então "empacotar como desktop" é só trocar a aba do navegador por uma janela própria — nenhum dado muda de lugar, nenhum comando Rust novo foi escrito.
+
+Na máquina Windows onde você vai gerar o `.exe` (não dá para compilar Windows a partir deste ambiente Linux):
+
+```bat
+INSTALAR.bat        REM confere Node.js e Rust, roda npm install
+BUILD_WINDOWS.bat   REM confere linker MSVC e WebView2, roda os testes, compila o .exe e os instaladores
+ABRIR.bat           REM abre o .exe já compilado
+ABRIR_DEV.bat        REM janela nativa apontando pro Vite em modo dev, pra testar mudanças sem recompilar o Rust
+```
+
+Pré-requisitos (o `BUILD_WINDOWS.bat` verifica cada um e explica como instalar o que faltar): Node.js LTS, Rust (`rustup.rs`), Visual Studio Build Tools com o workload "Desktop development with C++" (para o linker `link.exe`), e o WebView2 Runtime (já vem com Windows 10/11 na grande maioria dos casos). O build gera três formas do mesmo aplicativo em `src-tauri/target/release/`: um `.exe` portátil e instaladores `.msi`/NSIS `.exe`.
 
 ## Testes
 
@@ -154,6 +169,6 @@ Validação visual (Playwright, script avulso executado manualmente — não faz
 
 ## Limitações desta entrega
 
-- Não empacotado como aplicativo desktop `.exe` ainda — roda como app web (Vite) local. O RPG Canvas Studio já tem esse caminho todo resolvido (Tauri + `BUILD_WINDOWS.bat`); portar é mecânico quando as Fases 2+ estiverem mais maduras.
-- IndexedDB, não SQLite — decisão deliberada para a Fase 1 (zero dependência nativa, 100% local, interface pronta para trocar depois).
+- O empacotamento Windows (`src-tauri/` + `BUILD_WINDOWS.bat`) foi validado até onde este ambiente permite: o Cargo.toml resolve e a árvore de dependências do Tauri compila normalmente (confirmado com `cargo check`), mas o link final só roda numa máquina Windows de verdade com o MSVC Build Tools — este ambiente é Linux e não tem as bibliotecas gráficas nem o linker do Windows. O ícone do app (`src-tauri/icons/`) já foi gerado a partir de `app-icon.svg`.
+- IndexedDB, não SQLite — decisão deliberada para a Fase 1 (zero dependência nativa, 100% local, interface pronta para trocar depois). Isso vale também dentro do `.exe`: o WebView nativo (WebView2 no Windows) já tem IndexedDB embutido, então nenhum dado muda de lugar ao empacotar.
 - Criar um elemento por duplo clique sempre cria um NPC por padrão (não há como perguntar "qual tipo?" num duplo clique); use o seletor de tipo na barra de ferramentas do canvas para os outros 25 tipos.

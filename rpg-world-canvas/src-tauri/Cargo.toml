@@ -1,0 +1,16 @@
+[package]
+name = "rpg-world-canvas"
+version = "0.7.0"
+description = "Motor visual de campanhas de RPG de mesa — canvas local-first, um dado, várias lentes"
+authors = ["Zé Clover"]
+edition = "2021"
+
+[lib]
+name = "rpg_world_canvas_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
