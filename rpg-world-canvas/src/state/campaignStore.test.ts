@@ -72,6 +72,25 @@ describe("CampaignStore", () => {
     expect(store.getSnapshot().entities.find((e) => e.id === b.id)?.x).toBe(33_600);
   });
 
+  it("toggleFavoriteEntity liga e desliga, fora da pilha de undo", () => {
+    const store = new CampaignStore(createDemoCampaign());
+    const npc = store.getSnapshot().entities.find((entity) => entity.kind !== "group")!;
+    expect(store.getSnapshot().campaign.favoriteEntityIds).not.toContain(npc.id);
+    store.toggleFavoriteEntity(npc.id);
+    expect(store.getSnapshot().campaign.favoriteEntityIds).toContain(npc.id);
+    store.toggleFavoriteEntity(npc.id);
+    expect(store.getSnapshot().campaign.favoriteEntityIds).not.toContain(npc.id);
+  });
+
+  it("toggleFavoriteView liga e desliga", () => {
+    const store = new CampaignStore(createDemoCampaign());
+    const view = store.getSnapshot().views[0];
+    store.toggleFavoriteView(view.id);
+    expect(store.getSnapshot().campaign.favoriteViewIds).toContain(view.id);
+    store.toggleFavoriteView(view.id);
+    expect(store.getSnapshot().campaign.favoriteViewIds).not.toContain(view.id);
+  });
+
   it("move um grupo junto com seus descendentes e elementos filhos", () => {
     const store = new CampaignStore(createDemoCampaign());
     const parent = store.createEntity("group", { x: 10_000, y: 10_000 });

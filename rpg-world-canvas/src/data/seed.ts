@@ -83,6 +83,8 @@ export function createDemoCampaign(): CampaignData {
     color: "#a78bfa",
     icon: "🪄",
     enabledModules: defaultEnabledModules(),
+    favoriteEntityIds: [],
+    favoriteViewIds: [],
     createdAt: now,
     updatedAt: now,
   };

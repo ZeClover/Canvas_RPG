@@ -67,4 +67,20 @@ describe("arquivo de campanha", () => {
     const restored = parseCampaignArchive(JSON.stringify(raw));
     expect(restored.data.campaign.enabledModules).toEqual(["npc_brain"]);
   });
+
+  it("um arquivo salvo antes dos favoritos existirem importa sem nenhum favorito, não trava", () => {
+    const raw = JSON.parse(serializeCampaignArchive(createDemoCampaign()));
+    delete raw.data.campaign.favoriteEntityIds;
+    delete raw.data.campaign.favoriteViewIds;
+    const restored = parseCampaignArchive(JSON.stringify(raw));
+    expect(restored.data.campaign.favoriteEntityIds).toEqual([]);
+    expect(restored.data.campaign.favoriteViewIds).toEqual([]);
+  });
+
+  it("favoriteEntityIds malformado (não é array) cai para lista vazia em vez de travar", () => {
+    const raw = JSON.parse(serializeCampaignArchive(createDemoCampaign()));
+    raw.data.campaign.favoriteEntityIds = "não-é-uma-lista";
+    const restored = parseCampaignArchive(JSON.stringify(raw));
+    expect(restored.data.campaign.favoriteEntityIds).toEqual([]);
+  });
 });

@@ -16,8 +16,11 @@ interface TopbarProps {
   zoom: number;
   views: View[];
   activeViewId: string;
+  favoriteViewIds: string[];
+  isActiveViewFavorite: boolean;
   tools: ToolMenuItem[];
   onSetView: (id: string) => void;
+  onToggleFavoriteView: () => void;
   onBack: () => void;
   onSearch: () => void;
   onFitAll: () => void;
@@ -60,7 +63,8 @@ function ToolsMenu({ items }: { items: ToolMenuItem[] }) {
   );
 }
 
-export function Topbar({ campaign, saveLabel, zoom, views, activeViewId, tools, onSetView, onBack, onSearch, onFitAll, onSave, onExport }: TopbarProps) {
+export function Topbar({ campaign, saveLabel, zoom, views, activeViewId, favoriteViewIds, isActiveViewFavorite, tools, onSetView, onToggleFavoriteView, onBack, onSearch, onFitAll, onSave, onExport }: TopbarProps) {
+  const orderedViews = [...views].sort((a, b) => Number(favoriteViewIds.includes(b.id)) - Number(favoriteViewIds.includes(a.id)));
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -73,8 +77,17 @@ export function Topbar({ campaign, saveLabel, zoom, views, activeViewId, tools, 
 
       <div className="topbar-center">
         <select className="view-select" value={activeViewId} onChange={(event) => onSetView(event.target.value)} aria-label="View ativa">
-          {views.map((view) => <option key={view.id} value={view.id}>{view.icon} {view.title}</option>)}
+          {orderedViews.map((view) => <option key={view.id} value={view.id}>{favoriteViewIds.includes(view.id) ? "★ " : ""}{view.icon} {view.title}</option>)}
         </select>
+        <button
+          className="icon-button"
+          type="button"
+          title={isActiveViewFavorite ? "Remover esta View dos favoritos" : "Marcar esta View como favorita"}
+          aria-label={isActiveViewFavorite ? "Remover esta View dos favoritos" : "Marcar esta View como favorita"}
+          onClick={onToggleFavoriteView}
+        >
+          {isActiveViewFavorite ? <Icons.starFilled style={{ color: "#facc15" }} /> : <Icons.star />}
+        </button>
         <button className="search-trigger" onClick={onSearch}><Icons.search /><span>Buscar em toda a campanha</span><kbd>Ctrl K</kbd></button>
       </div>
 

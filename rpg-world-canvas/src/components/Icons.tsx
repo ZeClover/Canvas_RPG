@@ -40,4 +40,6 @@ export const Icons = {
   mail: (props: IconProps) => <IconBase {...props}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 6.5 8 6 8-6" /></IconBase>,
   target: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r=".8" fill="currentColor" stroke="none" /></IconBase>,
   image: (props: IconProps) => <IconBase {...props}><rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="8.5" cy="9.5" r="1.6" /><path d="m4 17 5.5-5.5c.6-.6 1.4-.6 2 0L15 15l1-1c.6-.6 1.4-.6 2 0l2 2" /></IconBase>,
+  star: (props: IconProps) => <IconBase {...props}><path d="m12 3.5 2.6 5.3 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8Z" /></IconBase>,
+  starFilled: (props: IconProps) => <IconBase {...props} fill="currentColor"><path d="m12 3.5 2.6 5.3 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8Z" /></IconBase>,
 };

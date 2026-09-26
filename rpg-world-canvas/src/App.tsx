@@ -313,8 +313,11 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
         zoom={camera.scale}
         views={state.views}
         activeViewId={state.activeViewId}
+        favoriteViewIds={state.campaign.favoriteViewIds}
+        isActiveViewFavorite={state.campaign.favoriteViewIds.includes(state.activeViewId)}
         tools={tools}
         onSetView={(id) => store.setActiveView(id)}
+        onToggleFavoriteView={() => store.toggleFavoriteView(state.activeViewId)}
         onBack={onBack}
         onSearch={() => setSearchOpen(true)}
         onFitAll={() => canvasRef.current?.fitAll()}
@@ -382,6 +385,8 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
             onCreateRelation={(toId, type) => store.createRelation(selectedEntity.id, toId, type)}
             onDeleteRelation={(id) => store.deleteRelation(id)}
             onEnterFocusMode={(id) => setFocusMode({ entityId: id, depth: 1 })}
+            isFavorite={state.campaign.favoriteEntityIds.includes(selectedEntity.id)}
+            onToggleFavorite={(id) => store.toggleFavoriteEntity(id)}
             onCreateEntityFromTranscript={(kind, title, summary) => {
               const center = canvasRef.current?.viewportCenter() ?? { x: 0, y: 0 };
               const created = store.createEntity(kind, { x: center.x - 120, y: center.y - 60 }, { title, summary });
@@ -417,6 +422,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
       {searchOpen && (
         <CommandPalette
           entities={state.entities}
+          favoriteEntityIds={state.campaign.favoriteEntityIds}
           onClose={() => setSearchOpen(false)}
           onChoose={(entity) => {
             store.selectEntity(entity.id);

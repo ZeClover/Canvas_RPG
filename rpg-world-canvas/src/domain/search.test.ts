@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { highlightSegments, rankEntityMatch, searchEntities } from "./search";
+import { highlightSegments, rankEntityMatch, searchEntities, sortFavoritesFirst } from "./search";
 import type { Entity } from "./types";
 
 function entity(overrides: Partial<Entity> = {}): Entity {
@@ -54,6 +54,25 @@ describe("search: searchEntities", () => {
     ];
     const results = searchEntities(entities, "vivian");
     expect(results.map((r) => r.entity.id)).toEqual(["2", "3"]); // título bate antes de resumo
+  });
+});
+
+describe("search: sortFavoritesFirst", () => {
+  it("move favoritos para o início, preservando a ordem relativa dos demais", () => {
+    const items = ["a", "b", "c", "d"];
+    const favorites = new Set(["c"]);
+    expect(sortFavoritesFirst(items, (item) => favorites.has(item))).toEqual(["c", "a", "b", "d"]);
+  });
+
+  it("sem nenhum favorito, a ordem não muda", () => {
+    const items = ["a", "b", "c"];
+    expect(sortFavoritesFirst(items, () => false)).toEqual(["a", "b", "c"]);
+  });
+
+  it("com múltiplos favoritos, preserva a ordem relativa entre eles e entre os não-favoritos", () => {
+    const items = ["a", "b", "c", "d", "e"];
+    const favorites = new Set(["b", "d"]);
+    expect(sortFavoritesFirst(items, (item) => favorites.has(item))).toEqual(["b", "d", "a", "c", "e"]);
   });
 });
 

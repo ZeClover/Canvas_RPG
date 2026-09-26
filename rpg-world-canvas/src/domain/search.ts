@@ -51,6 +51,14 @@ export function searchEntities(entities: Entity[], query: string, limit = 60): E
   return matches.sort((a, b) => a.rank - b.rank || a.entity.title.localeCompare(b.entity.title)).slice(0, limit);
 }
 
+/** Stable re-sort that bubbles favorited items to the front without
+ * otherwise disturbing relative order — used so Command Palette results
+ * put favorites first only while browsing (empty query), never overriding
+ * an actual name/tag/summary match's relevance once the GM is searching. */
+export function sortFavoritesFirst<T>(items: T[], isFavorite: (item: T) => boolean): T[] {
+  return [...items].sort((a, b) => Number(isFavorite(b)) - Number(isFavorite(a)));
+}
+
 export interface TextSegment {
   text: string;
   matched: boolean;

@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { kindConfig } from "../domain/entityKindRegistry";
-import { highlightSegments, searchEntities, type MatchField } from "../domain/search";
+import { highlightSegments, searchEntities, sortFavoritesFirst, type MatchField } from "../domain/search";
 import type { Entity } from "../domain/types";
+import { Icons } from "./Icons";
 
 interface CommandPaletteProps {
   entities: Entity[];
+  favoriteEntityIds: string[];
   onClose: () => void;
   onChoose: (entity: Entity) => void;
 }
@@ -16,10 +18,16 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   return <>{segments.map((segment, index) => segment.matched ? <mark key={index}>{segment.text}</mark> : <span key={index}>{segment.text}</span>)}</>;
 }
 
-export function CommandPalette({ entities, onClose, onChoose }: CommandPaletteProps) {
+export function CommandPalette({ entities, favoriteEntityIds, onClose, onChoose }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
 
-  const results = useMemo(() => searchEntities(entities, query), [entities, query]);
+  const results = useMemo(() => {
+    const matches = searchEntities(entities, query);
+    if (query.trim()) return matches;
+    const favoriteSet = new Set(favoriteEntityIds);
+    return sortFavoritesFirst(matches, (match) => favoriteSet.has(match.entity.id));
+  }, [entities, query, favoriteEntityIds]);
+  const favoriteSet = useMemo(() => new Set(favoriteEntityIds), [favoriteEntityIds]);
 
   return (
     <div className="dialog-backdrop search-backdrop" onMouseDown={onClose}>
@@ -43,6 +51,7 @@ export function CommandPalette({ entities, onClose, onChoose }: CommandPalettePr
                 <span className="search-title">
                   <HighlightedText text={entity.title || "Sem título"} query={field === "title" ? query : ""} />
                 </span>
+                {favoriteSet.has(entity.id) && <Icons.starFilled className="search-favorite-mark" />}
                 <span className="search-kind">{kindConfig(entity.kind).label}{field !== "title" && FIELD_LABEL[field] ? ` · ${FIELD_LABEL[field]}` : ""}</span>
               </button>
             </li>

@@ -191,6 +191,14 @@ function parseEnabledModules(value: unknown): ModuleKey[] {
   return known.length ? [...new Set(known)] : [];
 }
 
+/** Missing (older export) defaults to no favorites — never blocks import,
+ * never invents pins that weren't there. Non-string entries are dropped
+ * rather than rejecting the whole campaign. */
+function parseStringIdList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((item): item is string => typeof item === "string"))];
+}
+
 function parseCampaign(value: unknown): Campaign {
   const source = record(value, "Campanha");
   return {
@@ -200,6 +208,8 @@ function parseCampaign(value: unknown): Campaign {
     color: string(source.color, "Cor da campanha", 64),
     icon: nullableString(source.icon, "Ícone da campanha", 16),
     enabledModules: parseEnabledModules(source.enabledModules),
+    favoriteEntityIds: parseStringIdList(source.favoriteEntityIds),
+    favoriteViewIds: parseStringIdList(source.favoriteViewIds),
     createdAt: number(source.createdAt, "Criação da campanha", 0, Number.MAX_SAFE_INTEGER),
     updatedAt: number(source.updatedAt, "Atualização da campanha", 0, Number.MAX_SAFE_INTEGER),
   };

@@ -491,6 +491,22 @@ export class CampaignStore {
     this.updateCampaign({ enabledModules: modules });
   }
 
+  /** Favorites are a navigation convenience (Command Palette quick access),
+   * not campaign canon — same reasoning as setEnabledModules for staying
+   * outside undo/redo: toggling a star while browsing shouldn't consume an
+   * undo slot meant for actual campaign edits. */
+  toggleFavoriteEntity(id: string): void {
+    const current = this.state.campaign.favoriteEntityIds;
+    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+    this.updateCampaign({ favoriteEntityIds: next });
+  }
+
+  toggleFavoriteView(id: string): void {
+    const current = this.state.campaign.favoriteViewIds;
+    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+    this.updateCampaign({ favoriteViewIds: next });
+  }
+
   // ---- views ----------------------------------------------------------------
 
   setActiveView(id: string): void {

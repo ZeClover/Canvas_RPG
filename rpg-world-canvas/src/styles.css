@@ -219,6 +219,7 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .search-title { flex: 1; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .search-title mark { color: #f7f8ff; background: rgba(167,139,250,.35); border-radius: 3px; padding: 0 1px; }
 .search-kind { color: #748096; font-size: 10px; white-space: nowrap; }
+.search-favorite-mark { flex-shrink: 0; width: 13px; height: 13px; color: #facc15; }
 .search-empty { padding: 45px; color: #748096; text-align: center; font-size: 12px; }
 
 @media (max-width: 1050px) {

@@ -159,6 +159,10 @@ export interface Campaign {
    * domain/modules.ts. A module being off never deletes data, it just
    * hides that kind's editor section and its Ferramentas entry. */
   enabledModules: ModuleKey[];
+  /** Entities/views pinned for quick access from the Command Palette —
+   * purely a navigation convenience, never referenced by any rule/relation. */
+  favoriteEntityIds: string[];
+  favoriteViewIds: string[];
   createdAt: number;
   updatedAt: number;
 }

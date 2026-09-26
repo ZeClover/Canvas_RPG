@@ -67,6 +67,8 @@ export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, o
       color: CAMPAIGN_COLORS[campaigns.length % CAMPAIGN_COLORS.length],
       icon: "🌐",
       enabledModules: defaultEnabledModules(),
+      favoriteEntityIds: [],
+      favoriteViewIds: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
