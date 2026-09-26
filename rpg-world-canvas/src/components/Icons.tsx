@@ -38,4 +38,5 @@ export const Icons = {
   file: (props: IconProps) => <IconBase {...props}><path d="M6 2.5h9l3 3v16H6Z" /><path d="M15 2.5V6h3M9 12h6M9 15.5h6M9 8.5h2" /></IconBase>,
   pulse: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M7 12h2.5l1.5-4 2.5 8 1.5-4H17" /></IconBase>,
   mail: (props: IconProps) => <IconBase {...props}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 6.5 8 6 8-6" /></IconBase>,
+  target: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r=".8" fill="currentColor" stroke="none" /></IconBase>,
 };

@@ -1,3 +1,4 @@
+import { type AlignMode, computeAlignment, computeDistribution, type DistributeAxis } from "../domain/alignment";
 import { kindConfig } from "../domain/entityKindRegistry";
 import { createId } from "../domain/id";
 import type { ModuleKey } from "../domain/modules";
@@ -329,6 +330,24 @@ export class CampaignStore {
         return { ...entity, x: move.x, y: move.y, groupId, updatedAt: now };
       }),
     }));
+  }
+
+  /** Alinha os elementos selecionados (não-grupo) por uma borda/centro comum
+   * — uma única entrada de undo, igual a moveEntities, já que é isso que
+   * ela chama por baixo. Menos de duas entidades não faz nada. */
+  alignSelected(mode: AlignMode): void {
+    const entities = this.state.entities.filter((entity) => this.state.selectedEntityIds.includes(entity.id) && entity.kind !== "group");
+    const moves = computeAlignment(entities, mode);
+    if (moves.length) this.moveEntities(moves);
+  }
+
+  /** Distribui espaçamento uniforme entre os elementos selecionados
+   * (não-grupo), mantendo as duas pontas fixas. Precisa de pelo menos três
+   * elementos — com dois não há "meio" para redistribuir. */
+  distributeSelected(axis: DistributeAxis): void {
+    const entities = this.state.entities.filter((entity) => this.state.selectedEntityIds.includes(entity.id) && entity.kind !== "group");
+    const moves = computeDistribution(entities, axis);
+    if (moves.length) this.moveEntities(moves);
   }
 
   /** Moving a group carries every descendant group and every entity whose

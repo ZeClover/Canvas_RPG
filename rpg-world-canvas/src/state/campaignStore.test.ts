@@ -27,6 +27,51 @@ describe("CampaignStore", () => {
     expect(store.getSnapshot().entities.find((e) => e.id === a.id)?.x).toBe(origin.get(a.id)?.x);
   });
 
+  it("alinha a seleção pela borda esquerda em uma única operação reversível", () => {
+    const store = new CampaignStore(createDemoCampaign());
+    const first = store.createEntity("npc", { x: 30_000, y: 30_000 });
+    const second = store.createEntity("npc", { x: 30_400, y: 30_100 });
+    store.selectEntities([first.id, second.id]);
+    store.alignSelected("left");
+    const aligned = store.getSnapshot().entities.filter((e) => e.id === first.id || e.id === second.id);
+    expect(new Set(aligned.map((e) => e.x)).size).toBe(1); // ambos no mesmo x agora
+    expect(aligned.find((e) => e.id === second.id)?.y).toBe(30_100); // eixo Y intocado
+    store.undo();
+    expect(store.getSnapshot().entities.find((e) => e.id === second.id)?.x).toBe(30_400);
+  });
+
+  it("alignSelected não faz nada com menos de duas entidades selecionadas", () => {
+    const store = new CampaignStore(createDemoCampaign());
+    const only = store.createEntity("npc", { x: 31_000, y: 31_000 });
+    store.selectEntities([only.id]);
+    store.alignSelected("left");
+    expect(store.getSnapshot().entities.find((e) => e.id === only.id)?.x).toBe(31_000);
+  });
+
+  it("distribui espaçamento horizontal uniforme entre três ou mais selecionados", () => {
+    const store = new CampaignStore(createDemoCampaign());
+    const a = store.createEntity("npc", { x: 32_000, y: 32_000 });
+    const b = store.createEntity("npc", { x: 32_600, y: 32_000 });
+    const c = store.createEntity("npc", { x: 32_150, y: 32_000 });
+    store.selectEntities([a.id, b.id, c.id]);
+    store.distributeSelected("horizontal");
+    const snapshot = store.getSnapshot();
+    expect(snapshot.entities.find((e) => e.id === a.id)?.x).toBe(32_000); // ponta esquerda fixa
+    expect(snapshot.entities.find((e) => e.id === b.id)?.x).toBe(32_600); // ponta direita fixa
+    store.undo();
+    expect(store.getSnapshot().entities.find((e) => e.id === c.id)?.x).toBe(32_150);
+  });
+
+  it("distributeSelected não faz nada com menos de três entidades selecionadas", () => {
+    const store = new CampaignStore(createDemoCampaign());
+    const a = store.createEntity("npc", { x: 33_000, y: 33_000 });
+    const b = store.createEntity("npc", { x: 33_600, y: 33_000 });
+    store.selectEntities([a.id, b.id]);
+    store.distributeSelected("horizontal");
+    expect(store.getSnapshot().entities.find((e) => e.id === a.id)?.x).toBe(33_000);
+    expect(store.getSnapshot().entities.find((e) => e.id === b.id)?.x).toBe(33_600);
+  });
+
   it("move um grupo junto com seus descendentes e elementos filhos", () => {
     const store = new CampaignStore(createDemoCampaign());
     const parent = store.createEntity("group", { x: 10_000, y: 10_000 });

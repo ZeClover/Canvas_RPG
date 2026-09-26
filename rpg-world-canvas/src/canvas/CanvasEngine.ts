@@ -1,4 +1,4 @@
-import { cameraForBounds, cameraWorldBounds, clampScale, collectBounds, intersects, semanticLod } from "../domain/spatial";
+import { cameraForBounds, cameraWorldBounds, clampScale, collectBounds, intersects, selectionBounds, semanticLod } from "../domain/spatial";
 import { SpatialIndex } from "../domain/SpatialIndex";
 import { applyEntityRenderBudget } from "../domain/renderBudget";
 import { kindConfig } from "../domain/entityKindRegistry";
@@ -15,6 +15,9 @@ export interface CanvasRenderState {
   relations: Relation[];
   selectedEntityIds: string[];
   selectedRelationId: string | null;
+  /** Focus Mode: when set, only entities/relations inside this set render
+   * at full opacity — everything else dims, regardless of selection. */
+  focusSet?: Set<string> | null;
 }
 
 export interface CanvasEngineCallbacks {
@@ -82,6 +85,7 @@ const GROUP_MAX_WIDTH = 8000;
 const GROUP_MIN_HEIGHT = 220;
 const GROUP_MAX_HEIGHT = 8000;
 const GROUP_HEADER_HEIGHT = 56;
+const SNAP_TOLERANCE_PX = 6;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -118,6 +122,9 @@ export class CanvasEngine {
   private cardIndex = new SpatialIndex<Entity>();
   private entityById = new Map<string, Entity>();
   private relationsByEntityId = new Map<string, Relation[]>();
+  /** Alignment guide lines currently matched while dragging — world-space
+   * X/Y of whichever edge/center is aligned, or null on that axis. */
+  private snapGuides: { x: number | null; y: number | null } = { x: null, y: null };
   private initialFitDone = false;
   private cameraAnimationId = 0;
   private imageCache = new Map<string, HTMLImageElement>();
@@ -337,6 +344,7 @@ export class CanvasEngine {
     if (this.drag) {
       this.drag.dx = world.x - this.drag.pointerStart.x;
       this.drag.dy = world.y - this.drag.pointerStart.y;
+      this.applyDragSnap();
       this.render();
       return;
     }
@@ -427,6 +435,7 @@ export class CanvasEngine {
     if (this.drag) {
       const { positions, dx, dy } = this.drag;
       this.drag = null;
+      this.snapGuides = { x: null, y: null };
       if (commit && (dx !== 0 || dy !== 0)) this.callbacks.onMoveEntities([...positions].map(([id, position]) => ({ id, x: position.x + dx, y: position.y + dy })));
     }
     if (this.groupDrag) {
@@ -520,6 +529,68 @@ export class CanvasEngine {
       if (position) return { x: position.x + this.groupDrag.dx, y: position.y + this.groupDrag.dy, width: entity.width, height: entity.height };
     }
     return { x: entity.x, y: entity.y, width: entity.width, height: entity.height };
+  }
+
+  /** Snap-to-align while dragging: nudges `this.drag.dx/dy` so the dragged
+   * entity/entities' edges or centers line up with any other visible card
+   * within a small screen-space tolerance, and records where to draw the
+   * guide line. Independent per axis — X and Y can each snap or not. */
+  private applyDragSnap(): void {
+    if (!this.drag || !this.state) return;
+    const draggedIds = new Set(this.drag.positions.keys());
+    const bbox = this.draggedUnionBounds(draggedIds);
+    if (!bbox) {
+      this.snapGuides = { x: null, y: null };
+      return;
+    }
+    const tolerance = SNAP_TOLERANCE_PX / Math.max(this.camera.scale, 0.05);
+    const draggedX = [bbox.x, bbox.x + bbox.width / 2, bbox.x + bbox.width];
+    const draggedY = [bbox.y, bbox.y + bbox.height / 2, bbox.y + bbox.height];
+    let bestX: { delta: number; guide: number } | null = null;
+    let bestY: { delta: number; guide: number } | null = null;
+
+    for (const entity of this.state.entities) {
+      if (entity.kind === "group" || draggedIds.has(entity.id)) continue;
+      const bounds = this.effectiveBounds(entity);
+      const candidatesX = [bounds.x, bounds.x + bounds.width / 2, bounds.x + bounds.width];
+      const candidatesY = [bounds.y, bounds.y + bounds.height / 2, bounds.y + bounds.height];
+      for (const dx of draggedX) {
+        for (const cx of candidatesX) {
+          const delta = cx - dx;
+          if (Math.abs(delta) <= tolerance && (!bestX || Math.abs(delta) < Math.abs(bestX.delta))) bestX = { delta, guide: cx };
+        }
+      }
+      for (const dy of draggedY) {
+        for (const cy of candidatesY) {
+          const delta = cy - dy;
+          if (Math.abs(delta) <= tolerance && (!bestY || Math.abs(delta) < Math.abs(bestY.delta))) bestY = { delta, guide: cy };
+        }
+      }
+    }
+
+    if (bestX) this.drag.dx += bestX.delta;
+    if (bestY) this.drag.dy += bestY.delta;
+    this.snapGuides = { x: bestX ? bestX.guide : null, y: bestY ? bestY.guide : null };
+  }
+
+  private draggedUnionBounds(ids: Set<string>): WorldBounds | null {
+    let box: WorldBounds | null = null;
+    for (const id of ids) {
+      const entity = this.entityById.get(id);
+      if (!entity) continue;
+      const bounds = this.effectiveBounds(entity);
+      if (!box) {
+        box = { ...bounds };
+      } else {
+        const right = Math.max(box.x + box.width, bounds.x + bounds.width);
+        const bottom = Math.max(box.y + box.height, bounds.y + bounds.height);
+        box.x = Math.min(box.x, bounds.x);
+        box.y = Math.min(box.y, bounds.y);
+        box.width = right - box.x;
+        box.height = bottom - box.y;
+      }
+    }
+    return box;
   }
 
   private hitCard(point: WorldPoint): Entity | null {
@@ -799,9 +870,17 @@ export class CanvasEngine {
     const config = relationConfig(relation.type);
     const selectedEntities = this.state.selectedEntityIds;
     const relationSelected = this.state.selectedRelationId === relation.id;
-    const focused = selectedEntities.length > 0 || Boolean(this.state.selectedRelationId);
-    const related = relationSelected || selectedEntities.includes(from.id) || selectedEntities.includes(to.id);
-    const alpha = focused ? (related ? 0.95 : 0.08) : 0.68;
+    const focusSet = this.state.focusSet;
+    let related: boolean;
+    let alpha: number;
+    if (focusSet) {
+      related = focusSet.has(from.id) && focusSet.has(to.id);
+      alpha = related ? 0.95 : 0.06;
+    } else {
+      const focused = selectedEntities.length > 0 || Boolean(this.state.selectedRelationId);
+      related = relationSelected || selectedEntities.includes(from.id) || selectedEntities.includes(to.id);
+      alpha = focused ? (related ? 0.95 : 0.08) : 0.68;
+    }
     const start = this.edgePoint(from, to);
     const end = this.edgePoint(to, from);
     const dx = end.x - start.x;
@@ -866,11 +945,12 @@ export class CanvasEngine {
     const config = kindConfig(entity.kind);
     const accent = entity.color ?? config.color;
     const selected = this.state?.selectedEntityIds.includes(entity.id) ?? false;
+    const focusSet = this.state?.focusSet;
     const hasFocusedSelection = Boolean(this.state?.selectedEntityIds.length);
-    const related = !hasFocusedSelection || selected || this.isConnectedToSelection(entity.id);
+    const related = focusSet ? focusSet.has(entity.id) : !hasFocusedSelection || selected || this.isConnectedToSelection(entity.id);
 
     ctx.save();
-    ctx.globalAlpha = related ? 1 : 0.22;
+    ctx.globalAlpha = related ? 1 : (focusSet ? 0.1 : 0.22);
 
     ctx.fillStyle = "#171b28";
     ctx.beginPath();
@@ -984,6 +1064,27 @@ export class CanvasEngine {
   }
 
   private drawInteractionOverlay(ctx: CanvasRenderingContext2D): void {
+    if (this.drag && (this.snapGuides.x !== null || this.snapGuides.y !== null)) {
+      const viewport = cameraWorldBounds(this.camera, 420);
+      ctx.save();
+      ctx.strokeStyle = "#38bdf8";
+      ctx.globalAlpha = 0.85;
+      ctx.lineWidth = 1.5 / this.camera.scale;
+      ctx.setLineDash([6 / this.camera.scale, 5 / this.camera.scale]);
+      if (this.snapGuides.x !== null) {
+        ctx.beginPath();
+        ctx.moveTo(this.snapGuides.x, viewport.y);
+        ctx.lineTo(this.snapGuides.x, viewport.y + viewport.height);
+        ctx.stroke();
+      }
+      if (this.snapGuides.y !== null) {
+        ctx.beginPath();
+        ctx.moveTo(viewport.x, this.snapGuides.y);
+        ctx.lineTo(viewport.x + viewport.width, this.snapGuides.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     if (this.selection) {
       const bounds = this.normalizedBounds(this.selection.start, this.selection.end);
       ctx.save();
@@ -1041,6 +1142,24 @@ export class CanvasEngine {
     this.camera.viewportHeight = viewportHeight;
     const bounds = collectBounds(this.state.entities);
     this.animateCamera(cameraForBounds(bounds, viewportWidth, viewportHeight, 90));
+  }
+
+  /** Zoom/center on just the current selection instead of the whole
+   * campaign — falls back to fitAll() when nothing (or only groups with no
+   * other selection) is selected, since fitting an empty bounds box would
+   * otherwise just re-center on the world origin. */
+  fitSelection(): void {
+    if (!this.state) return;
+    const withBounds = this.state.entities.map((entity) => ({ id: entity.id, ...this.effectiveBounds(entity) }));
+    const bounds = selectionBounds(withBounds, this.state.selectedEntityIds);
+    if (!bounds) {
+      this.fitAll();
+      return;
+    }
+    const viewportWidth = this.host.clientWidth;
+    const viewportHeight = this.host.clientHeight;
+    if (viewportWidth < 100 || viewportHeight < 100) return;
+    this.animateCamera(cameraForBounds(bounds, viewportWidth, viewportHeight, 120));
   }
 
   focusEntity(id: string): void {

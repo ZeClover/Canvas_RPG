@@ -115,6 +115,28 @@ describe("CanvasEngine", () => {
     expect(callbacks.onMoveEntities).toHaveBeenCalledWith([{ id: npc.id, x: npc.x + 120, y: npc.y + 60 }]);
   });
 
+  it("arrastar perto de outro elemento gruda a borda (snap) e reporta a posição alinhada", async () => {
+    const base = makeState();
+    const template = base.entities.find((entity) => entity.kind !== "group")!;
+    const a = { ...template, id: "snap_a", x: 0, y: 0, width: 240, height: 126, groupId: null };
+    const b = { ...template, id: "snap_b", x: 500, y: 0, width: 240, height: 126, groupId: null };
+    const state = { ...base, entities: [a, b] };
+    const { engine, canvas, callbacks } = await createEngine(state);
+
+    const start = engine.worldToScreen({ x: a.x + a.width / 2, y: a.y + a.height / 2 });
+    firePointer(canvas, "pointerdown", { x: start.x, y: start.y });
+    engine.setState({ ...state, selectedEntityIds: [a.id] });
+    firePointer(canvas, "pointerdown", { x: start.x, y: start.y });
+
+    // Drag A's right edge to 0.5 world units short of B's left edge (500) —
+    // close enough that snapping should pull it the rest of the way.
+    const nearlyAligned = engine.worldToScreen({ x: a.x + a.width / 2 + 259.5, y: a.y + a.height / 2 });
+    firePointer(canvas, "pointermove", { x: nearlyAligned.x, y: nearlyAligned.y });
+    firePointer(window, "pointerup", { x: nearlyAligned.x, y: nearlyAligned.y });
+
+    expect(callbacks.onMoveEntities).toHaveBeenCalledWith([{ id: a.id, x: 260, y: 0 }]);
+  });
+
   it("redimensiona um elemento selecionado arrastando a alça", async () => {
     const base = makeState();
     const npc = base.entities.find((entity) => entity.kind !== "group")!;

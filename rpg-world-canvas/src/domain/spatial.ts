@@ -44,6 +44,16 @@ export function collectBounds(items: readonly WorldBounds[]): WorldBounds {
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
 
+/** Bounds of just the selected entities, for "Fit Selection" — null when
+ * nothing is selected, so the caller can fall back to fitting everything
+ * instead of collapsing onto an empty box at the world origin. */
+export function selectionBounds(entities: readonly (WorldBounds & { id: string })[], selectedIds: readonly string[]): WorldBounds | null {
+  if (!selectedIds.length) return null;
+  const selected = entities.filter((entity) => selectedIds.includes(entity.id));
+  if (!selected.length) return null;
+  return collectBounds(selected);
+}
+
 export function cameraForBounds(bounds: WorldBounds, viewportWidth: number, viewportHeight: number, padding = 100): CameraState {
   const safeWidth = Math.max(1, bounds.width + padding * 2);
   const safeHeight = Math.max(1, bounds.height + padding * 2);

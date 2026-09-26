@@ -140,6 +140,14 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .canvas-hint { position: absolute; z-index: 4; left: 16px; bottom: 13px; color: rgba(151,161,183,.58); font-size: 10px; pointer-events: none; }
 .multi-selection-badge { position: absolute; z-index: 12; left: 50%; bottom: 18px; padding: 9px 13px; color: #ded7ff; transform: translateX(-50%); background: rgba(39,30,70,.9); border: 1px solid rgba(167,139,250,.26); border-radius: 10px; box-shadow: 0 10px 28px rgba(0,0,0,.28); font-size: 10px; pointer-events: none; }
 
+.focus-mode-badge { position: absolute; z-index: 12; right: 18px; top: 18px; display: flex; align-items: center; gap: 12px; padding: 9px 14px; color: #ded7ff; background: rgba(39,30,70,.94); border: 1px solid rgba(167,139,250,.32); border-radius: 11px; box-shadow: 0 10px 28px rgba(0,0,0,.32); font-size: 11px; }
+.focus-mode-badge svg { flex-shrink: 0; width: 15px; height: 15px; color: #c4b5fd; }
+.focus-mode-badge strong { color: #fff; }
+.focus-mode-depth { display: flex; gap: 3px; }
+.focus-mode-depth button { width: 22px; height: 22px; color: #bcb2e6; background: rgba(255,255,255,.06); border: 1px solid rgba(167,139,250,.24); border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; }
+.focus-mode-depth button.active { color: #17122b; background: #c4b5fd; border-color: #c4b5fd; }
+.focus-mode-badge .ghost-button { padding: 5px 10px; font-size: 10px; }
+
 .minimap-shell { position: absolute; z-index: 10; right: 15px; bottom: 15px; width: 222px; height: 138px; padding: 25px 7px 7px; overflow: hidden; background: rgba(12,16,25,.88); border: 1px solid rgba(167,178,207,.18); border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,.35); backdrop-filter: blur(10px); }
 .minimap-shell > span { position: absolute; top: 8px; left: 10px; color: #6f7a91; font-size: 9px; font-weight: 800; letter-spacing: .16em; }
 .minimap-shell canvas { display: block; width: 100%; height: 100%; border-radius: 7px; cursor: crosshair; }
@@ -149,6 +157,7 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .node-inspector { position: absolute; z-index: 16; right: 15px; top: 64px; width: min(320px, calc(100% - 30px)); max-height: calc(100% - 30px); overflow: auto; padding: 18px; background: rgba(16,20,31,.96); border: 1px solid rgba(167,178,207,.17); border-radius: 15px; box-shadow: 0 22px 55px rgba(0,0,0,.42); backdrop-filter: blur(14px); }
 .inspector-heading { display: flex; align-items: start; justify-content: space-between; margin-bottom: 17px; }
 .inspector-heading h3 { margin: 6px 0 0; font-size: 18px; }
+.inspector-heading-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .node-inspector label { display: grid; gap: 7px; margin: 0 0 15px; color: #8994aa; font-size: 10px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
 .node-inspector select, .node-inspector textarea, .node-inspector > label > input { width: 100%; color: #dce1ed; background: #0c1019; border: 1px solid #283044; border-radius: 9px; font-size: 12px; font-weight: 450; letter-spacing: 0; text-transform: none; }
 .node-inspector select { height: 38px; padding: 0 10px; }

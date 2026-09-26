@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CanvasSurfaceHandle } from "./canvas/CanvasSurface";
+import type { CanvasSurfaceHandle, FocusMode } from "./canvas/CanvasSurface";
 import type { CanvasContextTarget } from "./canvas/CanvasEngine";
 import { CampaignHome } from "./components/CampaignHome";
 import { CanvasContextMenu } from "./components/CanvasContextMenu";
@@ -178,6 +178,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [modulesOpen, setModulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
+  const [focusMode, setFocusMode] = useState<FocusMode | null>(null);
 
   const selectedEntity = useMemo(
     () => state.selectedEntityIds.length === 1 ? state.entities.find((entity) => entity.id === state.selectedEntityIds[0]) ?? null : null,
@@ -191,6 +192,16 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     if (!selectedEntity) return [];
     return state.relations.filter((relation) => relation.fromEntityId === selectedEntity.id || relation.toEntityId === selectedEntity.id);
   }, [selectedEntity, state.relations]);
+  const focusModeEntity = useMemo(
+    () => focusMode ? state.entities.find((entity) => entity.id === focusMode.entityId) ?? null : null,
+    [focusMode, state.entities],
+  );
+
+  // If the focused entity gets deleted/archived out from under Focus Mode,
+  // drop it rather than keep dimming the whole Canvas against a ghost id.
+  useEffect(() => {
+    if (focusMode && !focusModeEntity) setFocusMode(null);
+  }, [focusMode, focusModeEntity]);
 
   const onCameraChange = useCallback((next: CameraState) => setCamera(next), []);
   const onEditEntity = useCallback((id: string, bounds: WorldBounds) => setEditing({ id, bounds }), []);
@@ -221,7 +232,9 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
       } else if (event.key === "Delete" || event.key === "Backspace") {
         store.deleteSelected();
       } else if (event.key === "Home") {
-        event.preventDefault(); canvasRef.current?.fitAll();
+        event.preventDefault();
+        if (event.shiftKey) canvasRef.current?.fitSelection();
+        else canvasRef.current?.fitAll();
       } else if ((event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowRight") && state.selectedEntityIds.length) {
         event.preventDefault();
         const step = event.shiftKey ? 10 : 1;
@@ -295,7 +308,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
       />
       <main className="workspace-main">
         <Suspense fallback={<div className="canvas-loading"><span className="loading-orbit" />Preparando o mapa…</div>}>
-          <CanvasSurface ref={canvasRef} store={store} onCameraChange={onCameraChange} onEditEntity={onEditEntity} onCreateEntity={onCreateEntity} onContextMenu={onContextMenu} />
+          <CanvasSurface ref={canvasRef} store={store} focusMode={focusMode} onCameraChange={onCameraChange} onEditEntity={onEditEntity} onCreateEntity={onCreateEntity} onContextMenu={onContextMenu} />
         </Suspense>
         <CanvasToolbar
           selectedCount={state.selectedEntityIds.length}
@@ -307,10 +320,32 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
             if (fromId && toId) store.createRelation(fromId, toId, "custom");
           }}
           onDelete={() => store.deleteSelected()}
+          onAlign={(mode) => store.alignSelected(mode)}
+          onDistribute={(axis) => store.distributeSelected(axis)}
+          onFitSelection={() => canvasRef.current?.fitSelection()}
         />
         <Minimap entities={state.entities} camera={camera} onNavigate={(point) => canvasRef.current?.centerOn(point)} />
         <div className="canvas-hint">Arraste o fundo para selecionar · Espaço + arrastar move o mapa · Puxe o ponto lateral para conectar · Alt + arrastar duplica</div>
         {state.selectedEntityIds.length > 1 && <div className="multi-selection-badge">{state.selectedEntityIds.length} elementos selecionados · arraste um para mover o conjunto</div>}
+        {focusMode && focusModeEntity && (
+          <div className="focus-mode-badge">
+            <Icons.target />
+            <span>Foco: <strong>{focusModeEntity.title || "Sem título"}</strong></span>
+            <div className="focus-mode-depth">
+              {[1, 2, 3].map((depth) => (
+                <button
+                  key={depth}
+                  type="button"
+                  className={depth === focusMode.depth ? "active" : ""}
+                  onClick={() => setFocusMode({ entityId: focusMode.entityId, depth })}
+                >
+                  {depth}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="ghost-button" onClick={() => setFocusMode(null)}>Sair do foco</button>
+          </div>
+        )}
 
         {editEntity && editing && (
           <QuickEditor
@@ -331,6 +366,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
             onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
             onCreateRelation={(toId, type) => store.createRelation(selectedEntity.id, toId, type)}
             onDeleteRelation={(id) => store.deleteRelation(id)}
+            onEnterFocusMode={(id) => setFocusMode({ entityId: id, depth: 1 })}
             onCreateEntityFromTranscript={(kind, title, summary) => {
               const center = canvasRef.current?.viewportCenter() ?? { x: 0, y: 0 };
               const created = store.createEntity(kind, { x: center.x - 120, y: center.y - 60 }, { title, summary });

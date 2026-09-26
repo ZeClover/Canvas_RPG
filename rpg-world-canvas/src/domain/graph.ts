@@ -54,6 +54,15 @@ export function bfsFrom(startId: string, adjacency: Map<string, AdjacencyEdge[]>
   return [...visited.values()];
 }
 
+/** Focus Mode: the focused entity plus every neighbor within maxDepth hops,
+ * as a single set — this is what the Canvas dims everything else against.
+ * Always includes the focus entity itself, even at depth 0. */
+export function focusNeighborhood(entityId: string, relations: Relation[], maxDepth: number): Set<string> {
+  const adjacency = buildAdjacency(relations);
+  const reached = bfsFrom(entityId, adjacency, maxDepth);
+  return new Set([entityId, ...reached.map((node) => node.entityId)]);
+}
+
 /** How many relations touch each entity — a simple, honest stand-in for
  * "how central is this to the conspiracy" without any inference. */
 export function degreeCounts(relations: Relation[]): Map<string, number> {

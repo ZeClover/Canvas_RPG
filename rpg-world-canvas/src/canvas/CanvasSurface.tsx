@@ -1,11 +1,18 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import { focusNeighborhood } from "../domain/graph";
 import type { CameraState, WorldBounds, WorldPoint } from "../domain/types";
 import { applyViewFilter } from "../domain/viewFilter";
 import type { CampaignStore } from "../state/campaignStore";
 import { CanvasEngine, type CanvasContextTarget, type CanvasRenderState } from "./CanvasEngine";
 
+export interface FocusMode {
+  entityId: string;
+  depth: number;
+}
+
 export interface CanvasSurfaceHandle {
   fitAll: () => void;
+  fitSelection: () => void;
   focusEntity: (id: string) => void;
   centerOn: (point: WorldPoint) => void;
   viewportCenter: () => WorldPoint;
@@ -13,6 +20,7 @@ export interface CanvasSurfaceHandle {
 
 interface CanvasSurfaceProps {
   store: CampaignStore;
+  focusMode: FocusMode | null;
   onCameraChange: (camera: CameraState) => void;
   onEditEntity: (id: string, bounds: WorldBounds) => void;
   onCreateEntity: (id: string, screen: WorldPoint) => void;
@@ -23,7 +31,7 @@ interface CanvasSurfaceProps {
  * grid, groups, relations, cards, selection and drag previews — is drawn
  * and hit-tested by CanvasEngine on a single visible canvas. */
 export const CanvasSurface = forwardRef<CanvasSurfaceHandle, CanvasSurfaceProps>(function CanvasSurface(
-  { store, onCameraChange, onEditEntity, onCreateEntity, onContextMenu },
+  { store, focusMode, onCameraChange, onEditEntity, onCreateEntity, onContextMenu },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -31,6 +39,7 @@ export const CanvasSurface = forwardRef<CanvasSurfaceHandle, CanvasSurfaceProps>
 
   useImperativeHandle(ref, () => ({
     fitAll: () => engineRef.current?.fitAll(),
+    fitSelection: () => engineRef.current?.fitSelection(),
     focusEntity: (id) => engineRef.current?.focusEntity(id),
     centerOn: (point) => engineRef.current?.centerOn(point),
     viewportCenter: () => engineRef.current?.getViewportCenter() ?? { x: 0, y: 0 },
@@ -43,9 +52,20 @@ export const CanvasSurface = forwardRef<CanvasSurfaceHandle, CanvasSurfaceProps>
       const entities = activeView ? applyViewFilter(snapshot.entities, activeView.filter) : snapshot.entities;
       const visibleIds = new Set(entities.map((entity) => entity.id));
       const relations = snapshot.relations.filter((relation) => visibleIds.has(relation.fromEntityId) && visibleIds.has(relation.toEntityId));
-      return { entities, relations, selectedEntityIds: snapshot.selectedEntityIds, selectedRelationId: snapshot.selectedRelationId };
+      const focusSet = focusMode ? focusNeighborhood(focusMode.entityId, snapshot.relations, focusMode.depth) : null;
+      return { entities, relations, selectedEntityIds: snapshot.selectedEntityIds, selectedRelationId: snapshot.selectedRelationId, focusSet };
     };
-  }, [store]);
+  }, [store, focusMode]);
+
+  // Read via a ref inside the mount effect below so toggling Focus Mode (or
+  // anything else that changes computeRenderState's identity) never tears
+  // down and recreates the CanvasEngine — only the one-time setup effect
+  // may do that, and it must depend on nothing but truly stable props.
+  const computeRenderStateRef = useRef(computeRenderState);
+  useEffect(() => {
+    computeRenderStateRef.current = computeRenderState;
+    engineRef.current?.setState(computeRenderState());
+  }, [computeRenderState]);
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -69,21 +89,21 @@ export const CanvasSurface = forwardRef<CanvasSurfaceHandle, CanvasSurfaceProps>
     });
     engineRef.current = engine;
     void engine.init().then(() => {
-      engine.setState(computeRenderState());
+      engine.setState(computeRenderStateRef.current());
       engine.fitAll();
     });
     if (typeof window !== "undefined") {
       (window as unknown as { __rpgWorldCanvasEngine?: CanvasEngine }).__rpgWorldCanvasEngine = engine;
     }
     const unsubscribe = store.subscribe(() => {
-      engine.setState(computeRenderState());
+      engine.setState(computeRenderStateRef.current());
     });
     return () => {
       unsubscribe();
       engine.destroy();
       engineRef.current = null;
     };
-  }, [computeRenderState, onCameraChange, onContextMenu, onCreateEntity, onEditEntity, store]);
+  }, [onCameraChange, onContextMenu, onCreateEntity, onEditEntity, store]);
 
   return <div ref={hostRef} className="canvas-surface" aria-label="Canvas visual da campanha" />;
 });

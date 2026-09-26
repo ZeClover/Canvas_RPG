@@ -34,11 +34,12 @@ interface EntityInspectorProps {
   onCreateRelation: (toEntityId: string, type: RelationType) => void;
   onDeleteRelation: (id: string) => void;
   onCreateEntityFromTranscript: (kind: EntityKind, title: string, summary: string) => void;
+  onEnterFocusMode?: (entityId: string) => void;
 }
 
 const VISIBILITY_LABEL: Record<Visibility, string> = { gm_only: "Só o mestre", revealed: "Revelado aos jogadores", partial: "Parcialmente revelado" };
 
-export function EntityInspector({ entity, allEntities, relations, enabledModules, onUpdate, onClose, onFocusEntity, onCreateRelation, onDeleteRelation, onCreateEntityFromTranscript }: EntityInspectorProps) {
+export function EntityInspector({ entity, allEntities, relations, enabledModules, onUpdate, onClose, onFocusEntity, onCreateRelation, onDeleteRelation, onCreateEntityFromTranscript, onEnterFocusMode }: EntityInspectorProps) {
   const [tags, setTags] = useState(entity.tags.join(", "));
   const [summary, setSummary] = useState(entity.summary);
   const [status, setStatus] = useState(entity.status ?? "");
@@ -68,7 +69,12 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
     <aside className="node-inspector" aria-label="Propriedades do elemento">
       <div className="inspector-heading">
         <div><span className="eyebrow">{config.icon} {config.label.toUpperCase()}</span><h3>{entity.title || "Sem título"}</h3></div>
-        <button className="icon-button" type="button" aria-label="Fechar propriedades" onClick={onClose}><Icons.close /></button>
+        <div className="inspector-heading-actions">
+          {onEnterFocusMode && !isGroup && (
+            <button className="icon-button" type="button" title="Modo Foco" aria-label="Ativar Modo Foco nesta entidade" onClick={() => onEnterFocusMode(entity.id)}><Icons.target /></button>
+          )}
+          <button className="icon-button" type="button" aria-label="Fechar propriedades" onClick={onClose}><Icons.close /></button>
+        </div>
       </div>
 
       <label>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bfsFrom, buildAdjacency, causalChain, degreeCounts, orphanEntities } from "./graph";
+import { bfsFrom, buildAdjacency, causalChain, degreeCounts, focusNeighborhood, orphanEntities } from "./graph";
 import type { Entity, Relation } from "./types";
 
 function entity(id: string, kind: Entity["kind"] = "clue"): Entity {
@@ -50,6 +50,17 @@ describe("graph: BFS e grau (Mystery Board)", () => {
     const entities = [entity("a"), entity("b"), entity("e")];
     const orphans = orphanEntities(entities, relations);
     expect(orphans.map((e) => e.id)).toEqual(["e"]);
+  });
+
+  it("focusNeighborhood inclui o próprio foco e respeita a profundidade escolhida", () => {
+    expect(focusNeighborhood("a", relations, 0)).toEqual(new Set(["a"]));
+    expect(focusNeighborhood("a", relations, 1)).toEqual(new Set(["a", "b"]));
+    expect(focusNeighborhood("a", relations, 2)).toEqual(new Set(["a", "b", "c"]));
+    expect(focusNeighborhood("a", relations, 3)).toEqual(new Set(["a", "b", "c", "d"]));
+  });
+
+  it("focusNeighborhood de um nó isolado é só ele mesmo", () => {
+    expect(focusNeighborhood("e", relations, 3)).toEqual(new Set(["e"]));
   });
 });
 
