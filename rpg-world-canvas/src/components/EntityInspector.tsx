@@ -23,6 +23,7 @@ import { RumorSection } from "./sections/RumorSection";
 import { SceneSection } from "./sections/SceneSection";
 import { SessionSection } from "./sections/SessionSection";
 import { SettlementSection } from "./sections/SettlementSection";
+import { TableSection } from "./sections/TableSection";
 import { ThemeSection } from "./sections/ThemeSection";
 import { TranscriptSection } from "./sections/TranscriptSection";
 
@@ -207,6 +208,7 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
       )}
       {showKindSection && entity.kind === "message" && <MessageSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "encounter" && <EncounterSection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "table" && <TableSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
 
       <div className="size-fields">
         <label>Largura<input value={Math.round(entity.width)} inputMode="numeric" onChange={(event) => onUpdate({ width: Math.max(80, Number(event.target.value) || entity.width) })} /></label>

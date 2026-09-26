@@ -20,6 +20,7 @@ import { PlayerKnowledgeViewPanel } from "./components/panels/PlayerKnowledgeVie
 import { RulesEnginePanel } from "./components/panels/RulesEnginePanel";
 import { RumorGeneratorPanel } from "./components/panels/RumorGeneratorPanel";
 import { SettlementsPanel } from "./components/panels/SettlementsPanel";
+import { TablesPanel } from "./components/panels/TablesPanel";
 import { Icons } from "./components/Icons";
 import { QuickEditor } from "./components/QuickEditor";
 import { RelationInspector } from "./components/RelationInspector";
@@ -41,7 +42,9 @@ import {
   type BackupInfo,
 } from "./data/repository";
 import { createDemoCampaign, createSecondDemoCampaign } from "./data/seed";
+import { createId } from "./domain/id";
 import type { ModuleKey } from "./domain/modules";
+import { readTableFields } from "./domain/tableFields";
 import type { CameraState, Campaign, EntityKind, UniverseLink, WorldBounds, WorldPoint } from "./domain/types";
 import { CampaignStore } from "./state/campaignStore";
 import { useCampaign } from "./state/useCampaign";
@@ -183,6 +186,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [encountersOpen, setEncountersOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [tablesOpen, setTablesOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
@@ -310,6 +314,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     { key: "messages", label: "Cartas & mensageiros", icon: Icons.mail, onClick: () => setMessagesOpen(true), visible: hasModule("world_communication") },
     { key: "encounters", label: "Encontros", icon: Icons.shield, onClick: () => setEncountersOpen(true), visible: hasModule("combat_tracker") },
     { key: "calendar", label: "Calendário", icon: Icons.clock, onClick: () => setCalendarOpen(true), visible: hasModule("calendar_engine") },
+    { key: "tables", label: "Tabelas", icon: Icons.dice, onClick: () => setTablesOpen(true), visible: hasModule("table_engine") },
     { key: "export-image", label: "Exportar imagem PNG", icon: Icons.image, onClick: () => void exportCanvasImage(), visible: true },
     { key: "modules", label: "Módulos desta campanha", icon: Icons.toggles, onClick: () => setModulesOpen(true), visible: true },
   ];
@@ -549,6 +554,19 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
           onClose={() => setCalendarOpen(false)}
           onAdvance={(days, note) => store.advanceCalendar(days, note)}
           onUpdateConfig={(partial) => store.updateCalendarConfig(partial)}
+        />
+      )}
+      {tablesOpen && (
+        <TablesPanel
+          entities={state.entities}
+          onClose={() => setTablesOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+          onRecordRoll={(entityId, result) => {
+            const entity = state.entities.find((candidate) => candidate.id === entityId);
+            if (!entity) return;
+            const table = readTableFields(entity.fields);
+            store.updateEntity(entityId, { fields: { ...table, history: [...table.history, { id: createId("tableroll"), at: Date.now(), result }] } });
+          }}
         />
       )}
       {modulesOpen && (
