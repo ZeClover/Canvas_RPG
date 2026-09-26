@@ -370,6 +370,16 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .character-attribute-label { flex: 1.2; min-width: 0; height: 26px; padding: 0 7px; color: #dce1ed; background: transparent; border: 1px solid #242c3d; border-radius: 6px; font-size: 10px; }
 .character-attribute-value { flex: 1; min-width: 0; height: 26px; padding: 0 7px; color: #dce1ed; background: transparent; border: 1px solid #242c3d; border-radius: 6px; font-size: 10px; }
 
+/* Faction Engine: clocks */
+.faction-clock-list { display: grid; gap: 9px; margin: 0 0 10px; padding: 0; list-style: none; }
+.faction-clock { padding: 9px; background: #0c1019; border: 1px solid #242c3d; border-radius: 10px; }
+.faction-clock-header { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+.faction-clock-header input { flex: 1; min-width: 0; height: 28px; padding: 0 8px; color: #dce1ed; background: transparent; border: 1px solid #283044; border-radius: 7px; font-size: 11px; }
+.faction-clock-count { flex-shrink: 0; color: #8994aa; font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.faction-clock-dots { display: flex; flex-wrap: wrap; gap: 5px; }
+.faction-clock-dot { width: 20px; height: 20px; padding: 0; background: rgba(255,255,255,.05); border: 1px solid #283044; border-radius: 50%; cursor: pointer; }
+.faction-clock-dot.is-filled { background: #facc15; border-color: #facc15; }
+
 /* Settlements panel (World Progression) */
 .settlement-list { max-height: 480px; }
 .settlement-row { align-items: center; }

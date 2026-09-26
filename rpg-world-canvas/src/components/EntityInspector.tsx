@@ -11,6 +11,7 @@ import { CharacterSection } from "./sections/CharacterSection";
 import { EcologySection } from "./sections/EcologySection";
 import { EconomySection } from "./sections/EconomySection";
 import { EncounterSection } from "./sections/EncounterSection";
+import { FactionSection } from "./sections/FactionSection";
 import { ForeshadowingSection } from "./sections/ForeshadowingSection";
 import { MessageSection } from "./sections/MessageSection";
 import { NpcSection } from "./sections/NpcSection";
@@ -192,6 +193,7 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
       {showKindSection && entity.kind === "session" && <SessionSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "rule" && <RuleSection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "city" && <SettlementSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "faction" && <FactionSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "project" && <ProjectSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "item" && <EconomySection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "resource" && <ResourceSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
