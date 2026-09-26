@@ -40,7 +40,7 @@ export function MultiverseLinksPanel({ campaigns, links, onClose, onCreateLink, 
   return (
     <div className="dialog-backdrop" onMouseDown={onClose}>
       <section className="backup-dialog" onMouseDown={(event) => event.stopPropagation()} aria-label="Multiverso">
-        <button type="button" className="icon-button dialog-close" aria-label="Fechar multiverso" onClick={onClose}><Icons.close /></button>
+        <button type="button" className="icon-button dialog-close" title="Fechar multiverso" aria-label="Fechar multiverso" onClick={onClose}><Icons.close /></button>
         <span className="eyebrow">MULTIVERSE ENGINE</span>
         <h2>Ligações entre universos</h2>
         <p>Registre que duas campanhas se tocam de algum jeito — um crossover, uma cosmologia compartilhada, a mesma linha do tempo em eras diferentes. Isso é só uma anotação: nenhum dado é combinado entre as campanhas.</p>

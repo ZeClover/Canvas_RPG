@@ -51,7 +51,7 @@ export function RumorGeneratorPanel({ entities, onClose, onCreateRumor }: RumorG
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Gerador de rumores">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">RUMOR ENGINE</span><h2>Gerador de rumores</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <label className="compact-field" style={{ marginBottom: 14 }}>

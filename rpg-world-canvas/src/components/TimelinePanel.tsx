@@ -44,7 +44,7 @@ export function TimelinePanel({ entities, onClose, onFocusEntity }: TimelinePane
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Timeline da campanha">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">TIMELINE</span><h2>Linha do tempo</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <div className="timeline-filters">

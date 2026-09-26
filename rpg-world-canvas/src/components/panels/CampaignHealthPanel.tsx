@@ -56,7 +56,7 @@ export function CampaignHealthPanel({ entities, relations, onClose, onFocusEntit
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Saúde da campanha">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">CAMPAIGN HEALTH</span><h2>Saúde da campanha</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <div className="tool-panel-columns">

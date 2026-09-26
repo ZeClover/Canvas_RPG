@@ -44,7 +44,7 @@ export function ModulesPanel({ enabledModules, onClose, onChange }: ModulesPanel
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Módulos da campanha">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">CONFIGURAÇÃO</span><h2>Módulos desta campanha</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
         <p className="modules-intro">Desligar um módulo só esconde a ferramenta e a seção especializada — nada é apagado, e dá para ligar de novo a qualquer momento.</p>
 

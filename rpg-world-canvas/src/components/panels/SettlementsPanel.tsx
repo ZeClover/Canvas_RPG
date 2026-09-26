@@ -29,7 +29,7 @@ export function SettlementsPanel({ entities, onClose, onFocusEntity }: Settlemen
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Progresso do mundo">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">PROGRESSO DO MUNDO</span><h2>Assentamentos</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <div className="timeline-filters">

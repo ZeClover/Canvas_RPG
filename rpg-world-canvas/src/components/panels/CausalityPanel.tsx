@@ -68,7 +68,7 @@ export function CausalityPanel({ entities, relations, onClose, onFocusEntity }: 
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Efeito borboleta">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">CAUSALIDADE</span><h2>Efeito borboleta</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <div className="graph-focus-form">

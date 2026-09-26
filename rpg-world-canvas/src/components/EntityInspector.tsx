@@ -80,7 +80,7 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
           {onEnterFocusMode && !isGroup && (
             <button className="icon-button" type="button" title="Modo Foco" aria-label="Ativar Modo Foco nesta entidade" onClick={() => onEnterFocusMode(entity.id)}><Icons.target /></button>
           )}
-          <button className="icon-button" type="button" aria-label="Fechar propriedades" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" type="button" title="Fechar propriedades" aria-label="Fechar propriedades" onClick={onClose}><Icons.close /></button>
         </div>
       </div>
 
@@ -222,7 +222,7 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
                     <span className="relation-type" style={{ color: cfg.color }}>{direction} {relation.label || cfg.label}</span>
                     <span className="relation-target">{other ? `${kindConfig(other.kind).icon} ${other.title}` : "(removido)"}</span>
                   </button>
-                  <button type="button" className="icon-button" aria-label="Remover relação" onClick={() => onDeleteRelation(relation.id)}><Icons.close /></button>
+                  <button type="button" className="icon-button" title="Remover relação" aria-label="Remover relação" onClick={() => onDeleteRelation(relation.id)}><Icons.close /></button>
                 </li>
               );
             })}

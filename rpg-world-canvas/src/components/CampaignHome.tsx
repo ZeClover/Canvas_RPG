@@ -147,7 +147,7 @@ export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, o
       {creating && (
         <div className="dialog-backdrop" onMouseDown={() => setCreating(false)}>
           <form className="new-project-dialog" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
-            <button type="button" className="icon-button dialog-close" onClick={() => setCreating(false)}><Icons.close /></button>
+            <button type="button" className="icon-button dialog-close" title="Fechar" aria-label="Fechar" onClick={() => setCreating(false)}><Icons.close /></button>
             <span className="eyebrow">NOVA CAMPANHA</span>
             <h2>Como ela vai se chamar?</h2>
             <input autoFocus value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ex.: Darkrem" />
@@ -159,7 +159,7 @@ export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, o
       {backupsOpen && (
         <div className="dialog-backdrop" onMouseDown={() => setBackupsOpen(false)}>
           <section className="backup-dialog" onMouseDown={(event) => event.stopPropagation()} aria-label="Recuperar backup">
-            <button type="button" className="icon-button dialog-close" aria-label="Fechar backups" onClick={() => setBackupsOpen(false)}><Icons.close /></button>
+            <button type="button" className="icon-button dialog-close" title="Fechar backups" aria-label="Fechar backups" onClick={() => setBackupsOpen(false)}><Icons.close /></button>
             <span className="eyebrow">RECUPERAÇÃO</span>
             <h2>Backups disponíveis</h2>
             <p>O mais recente é atualizado automaticamente. As cópias históricas são mantidas em rotação.</p>

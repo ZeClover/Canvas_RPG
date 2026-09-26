@@ -26,14 +26,14 @@ export function ObjectiveList({ title, objectives, onChange }: { title: string; 
           <li key={objective.id}>
             <input type="checkbox" checked={objective.done} onChange={(e) => onChange(objectives.map((o) => (o.id === objective.id ? { ...o, done: e.target.checked } : o)))} />
             <span className={objective.done ? "mini-list-text is-done" : "mini-list-text"}>{objective.text}</span>
-            <button type="button" className="icon-button" aria-label="Remover" onClick={() => onChange(objectives.filter((o) => o.id !== objective.id))}><Icons.close /></button>
+            <button type="button" className="icon-button" title="Remover" aria-label="Remover" onClick={() => onChange(objectives.filter((o) => o.id !== objective.id))}><Icons.close /></button>
           </li>
         ))}
         {!objectives.length && <li className="mini-list-empty">Nenhum ainda.</li>}
       </ul>
       <div className="inline-form">
         <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Novo item…" onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
-        <button type="button" disabled={!text.trim()} onClick={add}><Icons.plus /></button>
+        <button type="button" title="Adicionar item" aria-label="Adicionar item" disabled={!text.trim()} onClick={add}><Icons.plus /></button>
       </div>
     </div>
   );

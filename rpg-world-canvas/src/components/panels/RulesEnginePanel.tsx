@@ -24,7 +24,7 @@ export function RulesEnginePanel({ entities, onClose, onFocusEntity, onToggleEna
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Motor de regras">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">AUTOMAÇÃO</span><h2>Motor de regras</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <button type="button" className="ghost-button rule-create-button" onClick={onCreateRule}><Icons.plus /> Nova regra</button>

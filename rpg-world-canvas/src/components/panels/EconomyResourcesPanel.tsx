@@ -50,7 +50,7 @@ export function EconomyResourcesPanel({ entities, showItems, showResources, onCl
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Economia e recursos">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">ECONOMIA &amp; RECURSOS</span><h2>Preços e estoque</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <div className={`tool-panel-columns${showItems && showResources ? "" : " is-single-column"}`}>

@@ -33,7 +33,7 @@ export function PlayerKnowledgeViewPanel({ entities, onClose, onFocusEntity }: P
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Player Knowledge View">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">PLAYER KNOWLEDGE VIEW</span><h2>O que os jogadores sabem</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <div className="timeline-filters">

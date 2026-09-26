@@ -60,7 +60,7 @@ export function NpcSection({ fields, onUpdate }: NpcSectionProps) {
           <li key={entry.id}>
             <span className={`knowledge-badge state-${entry.state}`}>{KNOWLEDGE_STATE_LABEL[entry.state]}</span>
             <span className="mini-list-text">{entry.statement}</span>
-            <button type="button" className="icon-button" aria-label="Remover" onClick={() => patch({ knowledge: npc.knowledge.filter((k) => k.id !== entry.id) })}><Icons.close /></button>
+            <button type="button" className="icon-button" title="Remover" aria-label="Remover" onClick={() => patch({ knowledge: npc.knowledge.filter((k) => k.id !== entry.id) })}><Icons.close /></button>
           </li>
         ))}
         {!npc.knowledge.length && <li className="mini-list-empty">Nada registrado ainda.</li>}
@@ -82,7 +82,7 @@ export function NpcSection({ fields, onUpdate }: NpcSectionProps) {
           <li key={item.id}>
             <input type="checkbox" checked={item.done} onChange={(e) => patch({ possibilities: npc.possibilities.map((p) => (p.id === item.id ? { ...p, done: e.target.checked } : p)) })} />
             <span className={item.done ? "mini-list-text is-done" : "mini-list-text"}>{item.text}</span>
-            <button type="button" className="icon-button" aria-label="Remover" onClick={() => patch({ possibilities: npc.possibilities.filter((p) => p.id !== item.id) })}><Icons.close /></button>
+            <button type="button" className="icon-button" title="Remover" aria-label="Remover" onClick={() => patch({ possibilities: npc.possibilities.filter((p) => p.id !== item.id) })}><Icons.close /></button>
           </li>
         ))}
         {!npc.possibilities.length && <li className="mini-list-empty">Nenhuma cadastrada. Ex.: confrontar Kaleb, abandonar a academia…</li>}

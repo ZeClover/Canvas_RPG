@@ -31,7 +31,7 @@ export function RelationInspector({ relation, fromEntity, toEntity, onUpdate, on
           <span className="eyebrow">RELAÇÃO</span>
           <h3>{fromEntity?.title ?? "?"} → {toEntity?.title ?? "?"}</h3>
         </div>
-        <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+        <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
       </div>
       <label>Tipo<select value={relation.type} onChange={(event) => onUpdate({ type: event.target.value as RelationType })}>
         {RELATION_TYPES.map((type) => <option value={type} key={type}>{relationConfig(type).label}</option>)}

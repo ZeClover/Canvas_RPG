@@ -33,7 +33,7 @@ export function ForeshadowingSection({ fields, onUpdate }: ForeshadowingSectionP
         {[...foreshadowing.log].reverse().map((entry) => (
           <li key={entry.id}>
             <span className="mini-list-text">{entry.note}</span>
-            <button type="button" className="icon-button" aria-label="Remover" onClick={() => patch({ log: foreshadowing.log.filter((e) => e.id !== entry.id) })}><Icons.close /></button>
+            <button type="button" className="icon-button" title="Remover" aria-label="Remover" onClick={() => patch({ log: foreshadowing.log.filter((e) => e.id !== entry.id) })}><Icons.close /></button>
           </li>
         ))}
         {!foreshadowing.log.length && <li className="mini-list-empty">Nada registrado ainda.</li>}

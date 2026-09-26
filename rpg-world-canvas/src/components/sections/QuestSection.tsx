@@ -50,7 +50,7 @@ export function QuestSection({ status, fields, onUpdateStatus, onUpdate }: Quest
           <input type="number" min={0} max={quest.clock.max} value={quest.clock.current} onChange={(e) => patch({ clock: { ...quest.clock!, current: Number(e.target.value) } })} />
           <span>/</span>
           <input type="number" min={1} value={quest.clock.max} onChange={(e) => patch({ clock: { ...quest.clock!, max: Number(e.target.value) } })} />
-          <button type="button" className="icon-button" aria-label="Remover relógio" onClick={() => patch({ clock: null })}><Icons.close /></button>
+          <button type="button" className="icon-button" title="Remover relógio" aria-label="Remover relógio" onClick={() => patch({ clock: null })}><Icons.close /></button>
         </div>
       ) : (
         <button type="button" className="ghost-button" onClick={() => patch({ clock: { label: "Prazo", current: 0, max: 4 } })}><Icons.plus /> Adicionar relógio</button>
@@ -64,14 +64,14 @@ export function QuestSection({ status, fields, onUpdateStatus, onUpdate }: Quest
         {quest.resolutions.map((resolution) => (
           <li key={resolution.id}>
             <span className="mini-list-text">{resolution.title}</span>
-            <button type="button" className="icon-button" aria-label="Remover" onClick={() => patch({ resolutions: quest.resolutions.filter((r) => r.id !== resolution.id) })}><Icons.close /></button>
+            <button type="button" className="icon-button" title="Remover" aria-label="Remover" onClick={() => patch({ resolutions: quest.resolutions.filter((r) => r.id !== resolution.id) })}><Icons.close /></button>
           </li>
         ))}
         {!quest.resolutions.length && <li className="mini-list-empty">Ex.: salvar Hector, encontrar o corpo, investigar a morte…</li>}
       </ul>
       <div className="inline-form">
         <input value={resolutionTitle} onChange={(e) => setResolutionTitle(e.target.value)} placeholder="Nova resolução…" />
-        <button type="button" disabled={!resolutionTitle.trim()} onClick={() => {
+        <button type="button" title="Adicionar resolução" aria-label="Adicionar resolução" disabled={!resolutionTitle.trim()} onClick={() => {
           patch({ resolutions: [...quest.resolutions, { id: createId("resolution"), title: resolutionTitle.trim(), description: "" }] });
           setResolutionTitle("");
         }}><Icons.plus /></button>

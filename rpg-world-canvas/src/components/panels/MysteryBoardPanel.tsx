@@ -54,7 +54,7 @@ export function MysteryBoardPanel({ entities, relations, onClose, onFocusEntity 
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Quadro de mistérios">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">MISTÉRIO</span><h2>Quadro de conspirações</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <div className="tool-panel-columns">

@@ -48,7 +48,7 @@ export function MessagesPanel({ entities, relations, onClose, onFocusEntity }: M
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Comunicações do mundo">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">WORLD COMMUNICATION</span><h2>Cartas &amp; mensageiros</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <span className="eyebrow">MENSAGENS ({rows.length}{atRiskCount ? ` · ${atRiskCount} em risco` : ""})</span>

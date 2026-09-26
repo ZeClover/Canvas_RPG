@@ -59,7 +59,7 @@ export function KnowledgeEnginePanel({ entities, relations, onClose, onFocusEnti
       <section className="tool-panel" onMouseDown={(event) => event.stopPropagation()} aria-label="Motor de conhecimento">
         <header className="tool-panel-heading">
           <div><span className="eyebrow">CONHECIMENTO</span><h2>Quem sabe o quê</h2></div>
-          <button className="icon-button" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
+          <button className="icon-button" title="Fechar" aria-label="Fechar" onClick={onClose}><Icons.close /></button>
         </header>
 
         <div className="timeline-filters">
