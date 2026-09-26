@@ -354,6 +354,17 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 /* ResourceSection */
 .resource-critical-banner { margin-bottom: 14px; padding: 9px 10px; color: #fda4af; background: rgba(251,113,133,.08); border: 1px solid rgba(251,113,133,.2); border-radius: 9px; font-size: 10px; }
 
+/* Combat Tracker */
+.encounter-turn-banner { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 9px 10px; color: #fda4af; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25); border-radius: 9px; font-size: 11px; }
+.encounter-turn-banner button { display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; color: #fecaca; background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.3); border-radius: 7px; cursor: pointer; font-size: 10px; white-space: nowrap; }
+.encounter-list { display: grid; gap: 8px; margin: 0 0 10px; padding: 0; list-style: none; }
+.encounter-row { padding: 9px; background: #0c1019; border: 1px solid #242c3d; border-radius: 10px; }
+.encounter-row-active { border-color: #ef4444; box-shadow: 0 0 0 1px rgba(239,68,68,.25); }
+.encounter-ally-toggle { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; color: #8994aa; font-size: 10px; text-transform: none; letter-spacing: 0; }
+.encounter-ally-toggle input { accent-color: var(--violet); }
+.encounter-row-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.encounter-linked { overflow: hidden; color: #657088; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+
 /* Settlements panel (World Progression) */
 .settlement-list { max-height: 480px; }
 .settlement-row { align-items: center; }

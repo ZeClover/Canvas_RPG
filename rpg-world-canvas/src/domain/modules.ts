@@ -19,7 +19,8 @@ export type ModuleKey =
   | "settlement_engine" | "project_engine" | "economy_engine" | "resource_engine"
   | "scene_composer" | "theme_foreshadowing" | "ecology_engine" | "rumor_engine"
   | "transcript_engine" | "campaign_health" | "player_knowledge_view"
-  | "world_communication";
+  | "world_communication" | "combat_tracker" | "character_sheet"
+  | "faction_engine" | "calendar_engine" | "table_engine";
 
 export interface ModuleConfig {
   key: ModuleKey;
@@ -49,6 +50,11 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   { key: "campaign_health", label: "Campaign Health Dashboard", description: "Painel de saúde da campanha: contagens, pistas soltas, recursos críticos, regras desativadas.", phase: 6 },
   { key: "player_knowledge_view", label: "Player Knowledge View", description: "O que os jogadores sabem oficialmente, a partir da visibilidade de cada elemento.", phase: 6 },
   { key: "world_communication", label: "World Communication System", description: "Cartas, mensageiros e feitiços de comunicação entre NPCs/facções, com meio, status de entrega e conteúdo.", phase: 7 },
+  { key: "combat_tracker", label: "Combat Tracker", description: "Iniciativa, PV e condições por combatente, com avanço de turno/rodada.", phase: 8 },
+  { key: "character_sheet", label: "Character Sheet", description: "PV, nível e atributos genéricos no card de Personagem, agnóstico de sistema.", phase: 8 },
+  { key: "faction_engine", label: "Faction Engine", description: "Objetivo, recursos, standing e relógios de progresso (estilo clocks) por facção.", phase: 8 },
+  { key: "calendar_engine", label: "Calendar Engine", description: "Calendário customizável e relógio in-fiction da campanha, avançado manualmente pelo mestre.", phase: 8 },
+  { key: "table_engine", label: "Random Table Engine", description: "Tabelas reutilizáveis com sorteio ponderado (nomes, loot, encontros, o que for) — RNG puro, sem IA.", phase: 8 },
 ];
 
 export const ALL_MODULE_KEYS: ModuleKey[] = MODULE_REGISTRY.map((module) => module.key);
@@ -86,6 +92,10 @@ export const MODULE_FOR_KIND: Partial<Record<EntityKind, ModuleKey>> = {
   rumor: "rumor_engine",
   transcript: "transcript_engine",
   message: "world_communication",
+  encounter: "combat_tracker",
+  player: "character_sheet",
+  faction: "faction_engine",
+  table: "table_engine",
 };
 
 export function isKindSectionEnabled(kind: EntityKind, enabledModules: ModuleKey[]): boolean {

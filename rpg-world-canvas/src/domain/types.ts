@@ -45,6 +45,15 @@ export type EntityKind =
   // (originated_from/addressed_to), never a parallel sender/recipient
   // field.
   | "message"
+  // Combat/Encounter Tracker: a single fight, tracked round by round.
+  // Combatants live inside this entity's fields (see encounterFields.ts),
+  // optionally linking back to an existing npc/player/creature just for
+  // navigation — never a second source of truth for that entity's data.
+  | "encounter"
+  // Random Table / Generator Engine: a reusable, weighted list of entries
+  // (names, loot, rumors, weather — anything) the GM rolls on. Pure RNG,
+  // never AI: same "the GM stays in control" discipline as Rules Engine.
+  | "table"
   // Structural kind: a resizable/draggable area on the canvas that other
   // entities can belong to (via their groupId). Rendered as a bounded
   // region, not a card — everything else about it (tags, search, views,
@@ -56,7 +65,7 @@ export const ENTITY_KINDS: EntityKind[] = [
   "location", "city", "region", "faction", "creature", "item",
   "secret", "knowledge", "clue", "rumor", "decision", "possibility",
   "scene", "project", "resource", "theme", "foreshadowing",
-  "transcript", "universe", "rule", "message", "group",
+  "transcript", "universe", "rule", "message", "encounter", "table", "group",
 ];
 
 export type Visibility = "gm_only" | "revealed" | "partial";

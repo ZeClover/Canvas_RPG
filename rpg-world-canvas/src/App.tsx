@@ -10,6 +10,7 @@ import { Minimap } from "./components/Minimap";
 import { CampaignHealthPanel } from "./components/panels/CampaignHealthPanel";
 import { CausalityPanel } from "./components/panels/CausalityPanel";
 import { EconomyResourcesPanel } from "./components/panels/EconomyResourcesPanel";
+import { EncountersPanel } from "./components/panels/EncountersPanel";
 import { KnowledgeEnginePanel } from "./components/panels/KnowledgeEnginePanel";
 import { MessagesPanel } from "./components/panels/MessagesPanel";
 import { ModulesPanel } from "./components/panels/ModulesPanel";
@@ -179,6 +180,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [campaignHealthOpen, setCampaignHealthOpen] = useState(false);
   const [playerViewOpen, setPlayerViewOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
+  const [encountersOpen, setEncountersOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
@@ -304,6 +306,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     { key: "campaign-health", label: "Saúde da campanha", icon: Icons.pulse, onClick: () => setCampaignHealthOpen(true), visible: hasModule("campaign_health") },
     { key: "player-view", label: "O que os jogadores sabem", icon: Icons.eye, onClick: () => setPlayerViewOpen(true), visible: hasModule("player_knowledge_view") },
     { key: "messages", label: "Cartas & mensageiros", icon: Icons.mail, onClick: () => setMessagesOpen(true), visible: hasModule("world_communication") },
+    { key: "encounters", label: "Encontros", icon: Icons.shield, onClick: () => setEncountersOpen(true), visible: hasModule("combat_tracker") },
     { key: "export-image", label: "Exportar imagem PNG", icon: Icons.image, onClick: () => void exportCanvasImage(), visible: true },
     { key: "modules", label: "Módulos desta campanha", icon: Icons.toggles, onClick: () => setModulesOpen(true), visible: true },
   ];
@@ -527,6 +530,13 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
           entities={state.entities}
           relations={state.relations}
           onClose={() => setMessagesOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {encountersOpen && (
+        <EncountersPanel
+          entities={state.entities}
+          onClose={() => setEncountersOpen(false)}
           onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
         />
       )}

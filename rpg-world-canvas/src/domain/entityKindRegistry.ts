@@ -37,6 +37,8 @@ export const ENTITY_KIND_CONFIG: Record<EntityKind, EntityKindConfig> = {
   universe: { label: "Universo", icon: "🌌", color: "#7c3aed", width: 260, height: 140 },
   rule: { label: "Regra", icon: "🧩", color: "#fb923c", width: 240, height: 126 },
   message: { label: "Mensagem", icon: "✉️", color: "#38bdf8", width: 240, height: 126 },
+  encounter: { label: "Encontro", icon: "⚔️", color: "#ef4444", width: 260, height: 140 },
+  table: { label: "Tabela", icon: "🎲", color: "#f59e0b", width: 220, height: 116 },
   group: { label: "Grupo", icon: "🗂️", color: "#7767e9", width: 920, height: 620 },
 };
 
