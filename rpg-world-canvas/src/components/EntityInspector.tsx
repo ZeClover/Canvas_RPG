@@ -42,11 +42,12 @@ interface EntityInspectorProps {
   onEnterFocusMode?: (entityId: string) => void;
   isFavorite?: boolean;
   onToggleFavorite?: (entityId: string) => void;
+  onShowPresentation?: (entityId: string) => void;
 }
 
 const VISIBILITY_LABEL: Record<Visibility, string> = { gm_only: "Só o mestre", revealed: "Revelado aos jogadores", partial: "Parcialmente revelado" };
 
-export function EntityInspector({ entity, allEntities, relations, enabledModules, onUpdate, onClose, onFocusEntity, onCreateRelation, onDeleteRelation, onCreateEntityFromTranscript, onEnterFocusMode, isFavorite, onToggleFavorite }: EntityInspectorProps) {
+export function EntityInspector({ entity, allEntities, relations, enabledModules, onUpdate, onClose, onFocusEntity, onCreateRelation, onDeleteRelation, onCreateEntityFromTranscript, onEnterFocusMode, isFavorite, onToggleFavorite, onShowPresentation }: EntityInspectorProps) {
   const [tags, setTags] = useState(entity.tags.join(", "));
   const [summary, setSummary] = useState(entity.summary);
   const [status, setStatus] = useState(entity.status ?? "");
@@ -84,6 +85,9 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
           )}
           {onEnterFocusMode && !isGroup && (
             <button className="icon-button" type="button" title="Modo Foco" aria-label="Ativar Modo Foco nesta entidade" onClick={() => onEnterFocusMode(entity.id)}><Icons.target /></button>
+          )}
+          {onShowPresentation && !isGroup && enabledModules.includes("presentation_mode") && (
+            <button className="icon-button" type="button" title="Mostrar aos jogadores" aria-label="Mostrar aos jogadores em tela cheia" onClick={() => onShowPresentation(entity.id)}><Icons.monitor /></button>
           )}
           <button className="icon-button" type="button" title="Fechar propriedades" aria-label="Fechar propriedades" onClick={onClose}><Icons.close /></button>
         </div>

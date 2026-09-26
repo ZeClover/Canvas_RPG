@@ -22,6 +22,7 @@ import { RumorGeneratorPanel } from "./components/panels/RumorGeneratorPanel";
 import { SettlementsPanel } from "./components/panels/SettlementsPanel";
 import { TablesPanel } from "./components/panels/TablesPanel";
 import { Icons } from "./components/Icons";
+import { PresentationView } from "./components/PresentationView";
 import { QuickEditor } from "./components/QuickEditor";
 import { RelationInspector } from "./components/RelationInspector";
 import { TimelinePanel } from "./components/TimelinePanel";
@@ -191,6 +192,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
   const [focusMode, setFocusMode] = useState<FocusMode | null>(null);
+  const [presentationEntityId, setPresentationEntityId] = useState<string | null>(null);
 
   const selectedEntity = useMemo(
     () => state.selectedEntityIds.length === 1 ? state.entities.find((entity) => entity.id === state.selectedEntityIds[0]) ?? null : null,
@@ -214,6 +216,14 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   useEffect(() => {
     if (focusMode && !focusModeEntity) setFocusMode(null);
   }, [focusMode, focusModeEntity]);
+
+  const presentationEntity = useMemo(
+    () => presentationEntityId ? state.entities.find((entity) => entity.id === presentationEntityId) ?? null : null,
+    [presentationEntityId, state.entities],
+  );
+  useEffect(() => {
+    if (presentationEntityId && !presentationEntity) setPresentationEntityId(null);
+  }, [presentationEntityId, presentationEntity]);
 
   const onCameraChange = useCallback((next: CameraState) => setCamera(next), []);
   const onEditEntity = useCallback((id: string, bounds: WorldBounds) => setEditing({ id, bounds }), []);
@@ -402,6 +412,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
             onEnterFocusMode={(id) => setFocusMode({ entityId: id, depth: 1 })}
             isFavorite={state.campaign.favoriteEntityIds.includes(selectedEntity.id)}
             onToggleFavorite={(id) => store.toggleFavoriteEntity(id)}
+            onShowPresentation={(id) => setPresentationEntityId(id)}
             onCreateEntityFromTranscript={(kind, title, summary) => {
               const center = canvasRef.current?.viewportCenter() ?? { x: 0, y: 0 };
               const created = store.createEntity(kind, { x: center.x - 120, y: center.y - 60 }, { title, summary });
@@ -576,6 +587,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
           onChange={(modules) => store.setEnabledModules(modules)}
         />
       )}
+      {presentationEntity && <PresentationView entity={presentationEntity} onClose={() => setPresentationEntityId(null)} />}
     </div>
   );
 }

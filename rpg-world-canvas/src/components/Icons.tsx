@@ -44,4 +44,5 @@ export const Icons = {
   starFilled: (props: IconProps) => <IconBase {...props} fill="currentColor"><path d="m12 3.5 2.6 5.3 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8Z" /></IconBase>,
   forward: (props: IconProps) => <IconBase {...props}><path d="m5 6 6 6-6 6" /><path d="m13 6 6 6-6 6" /></IconBase>,
   dice: (props: IconProps) => <IconBase {...props}><rect x="3.5" y="3.5" width="17" height="17" rx="4" /><circle cx="8.3" cy="8.3" r="1.1" fill="currentColor" stroke="none" /><circle cx="15.7" cy="8.3" r="1.1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" /><circle cx="8.3" cy="15.7" r="1.1" fill="currentColor" stroke="none" /><circle cx="15.7" cy="15.7" r="1.1" fill="currentColor" stroke="none" /></IconBase>,
+  monitor: (props: IconProps) => <IconBase {...props}><rect x="2.5" y="4" width="19" height="13" rx="2" /><path d="M8 20h8M12 17v3" /></IconBase>,
 };
