@@ -199,6 +199,12 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
   const [focusMode, setFocusMode] = useState<FocusMode | null>(null);
   const [presentationEntityId, setPresentationEntityId] = useState<string | null>(null);
+  const [exportImageError, setExportImageError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!exportImageError) return;
+    const timer = window.setTimeout(() => setExportImageError(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [exportImageError]);
 
   const selectedEntity = useMemo(
     () => state.selectedEntityIds.length === 1 ? state.entities.find((entity) => entity.id === state.selectedEntityIds[0]) ?? null : null,
@@ -298,7 +304,10 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
 
   async function exportCanvasImage() {
     const blob = await canvasRef.current?.exportPNG();
-    if (!blob) return;
+    if (!blob) {
+      setExportImageError("Não deu para exportar a imagem. Confira se há algo no canvas para exportar — ou se uma imagem colada por link está bloqueando a exportação (troque por uma imagem enviada por arquivo e tente de novo).");
+      return;
+    }
     const activeView = state.views.find((view) => view.id === state.activeViewId);
     const scope = state.selectedEntityIds.length ? "selecao" : (activeView?.title ?? "canvas");
     const clean = `${state.campaign.title}-${scope}`.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
@@ -378,6 +387,12 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
         />
         <Minimap entities={state.entities} camera={camera} onNavigate={(point) => canvasRef.current?.centerOn(point)} />
         <div className="canvas-hint">Arraste o fundo para selecionar · Espaço + arrastar move o mapa · Puxe o ponto lateral para conectar · Alt + arrastar duplica</div>
+        {exportImageError && (
+          <div className="export-error-banner" role="alert">
+            <span>{exportImageError}</span>
+            <button type="button" className="icon-button" title="Fechar" aria-label="Fechar aviso" onClick={() => setExportImageError(null)}><Icons.close /></button>
+          </div>
+        )}
         {state.selectedEntityIds.length > 1 && <div className="multi-selection-badge">{state.selectedEntityIds.length} elementos selecionados · arraste um para mover o conjunto</div>}
         {focusMode && focusModeEntity && (
           <div className="focus-mode-badge">

@@ -744,8 +744,23 @@ export class CanvasEngine {
     let image = this.imageCache.get(src);
     if (!image) {
       image = new Image();
-      image.src = src;
+      // Try anonymous cross-origin first so a card linking an external
+      // http(s) image ("cole um link") doesn't taint exportPNG()'s canvas
+      // on hosts that send CORS headers. Most ordinary image hosts don't,
+      // though, and requesting crossOrigin from one of those makes the
+      // image fail to load at all (not just fail to export) — so on
+      // error we drop crossOrigin and reload plain, trading "this
+      // particular image can't be exported" for "this image never shows
+      // up at all". Data URLs from the local file picker never hit either
+      // path — same-origin, always loads, always exports.
+      image.crossOrigin = "anonymous";
       image.onload = () => this.render();
+      image.onerror = () => {
+        if (image!.crossOrigin === null) return;
+        image!.crossOrigin = null;
+        image!.src = src;
+      };
+      image.src = src;
       this.imageCache.set(src, image);
     }
     return image.complete && image.naturalWidth > 0 ? image : null;
@@ -1232,7 +1247,23 @@ export class CanvasEngine {
       this.camera = savedCamera;
     }
 
-    return new Promise((resolve) => exportCanvas.toBlob((blob) => resolve(blob), "image/png"));
+    try {
+      return await new Promise<Blob | null>((resolve, reject) => {
+        try {
+          exportCanvas.toBlob((blob) => resolve(blob), "image/png");
+        } catch (error) {
+          reject(error);
+        }
+      });
+    } catch {
+      // A card can link an external image (http/https "cole um link"). If
+      // that host doesn't send CORS headers, drawing it taints the export
+      // canvas and toBlob() throws SecurityError (Chromium) or silently
+      // resolves null (per spec, other engines) — never let this become an
+      // unhandled rejection. The caller already treats a null result as
+      // "nothing to export" and tells the GM to try without that image.
+      return null;
+    }
   }
 
   focusEntity(id: string): void {

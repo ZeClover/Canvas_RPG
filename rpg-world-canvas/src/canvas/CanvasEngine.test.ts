@@ -260,6 +260,27 @@ describe("CanvasEngine", () => {
     expect(engine.getCamera().viewportWidth).toBeGreaterThan(0);
   });
 
+  it("exportPNG nunca rejeita e resolve null quando o canvas fica 'tainted' (imagem externa sem CORS)", async () => {
+    // Regression test: a card can link an external http(s) image via "cole
+    // um link". Drawing one from a host that doesn't send CORS headers
+    // taints the export canvas, and toBlob() throws SecurityError
+    // synchronously in Chromium instead of just resolving null per spec —
+    // exportPNG() must swallow that and resolve null either way, never
+    // leave callers with an unhandled rejection (see App.tsx's
+    // exportCanvasImage, which has no try/catch around the await).
+    const state = makeState();
+    const { engine } = await createEngine(state);
+    const originalToBlob = HTMLCanvasElement.prototype.toBlob;
+    HTMLCanvasElement.prototype.toBlob = function toBlob() {
+      throw new DOMException("Tainted canvases may not be exported.", "SecurityError");
+    };
+    try {
+      await expect(engine.exportPNG()).resolves.toBeNull();
+    } finally {
+      HTMLCanvasElement.prototype.toBlob = originalToBlob;
+    }
+  });
+
   it("zoom com a roda do mouse mantém o ponto do mundo sob o cursor", async () => {
     const state = makeState();
     const { engine, canvas, callbacks } = await createEngine(state);
