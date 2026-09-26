@@ -10,7 +10,7 @@ export function ResourceSection({ fields, onUpdate }: ResourceSectionProps) {
   const critical = isResourceCritical(resource);
 
   function patch(partial: Partial<ResourceFields>) {
-    onUpdate({ ...resource, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

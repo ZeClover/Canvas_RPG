@@ -10,7 +10,7 @@ export function ThemeSection({ fields, onUpdate }: ThemeSectionProps) {
   const theme = readThemeFields(fields);
 
   function patch(partial: Partial<ThemeFields>) {
-    onUpdate({ ...theme, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

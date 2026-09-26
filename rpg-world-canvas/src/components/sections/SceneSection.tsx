@@ -10,7 +10,7 @@ export function SceneSection({ fields, onUpdate }: SceneSectionProps) {
   const scene = readSceneFields(fields);
 
   function patch(partial: Partial<SceneFields>) {
-    onUpdate({ ...scene, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

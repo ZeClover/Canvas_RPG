@@ -20,7 +20,7 @@ export function JourneySection({ fields, allEntities, onUpdate }: JourneySection
   const [logNote, setLogNote] = useState("");
 
   function patch(partial: Partial<JourneyFields>) {
-    onUpdate({ ...journey, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   function patchLeg(id: string, partial: Partial<JourneyLeg>) {

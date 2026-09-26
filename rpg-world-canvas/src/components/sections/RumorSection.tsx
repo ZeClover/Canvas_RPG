@@ -9,7 +9,7 @@ export function RumorSection({ fields, onUpdate }: RumorSectionProps) {
   const rumor = readRumorFields(fields);
 
   function patch(partial: Partial<RumorFields>) {
-    onUpdate({ ...rumor, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

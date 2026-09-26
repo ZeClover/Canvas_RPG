@@ -14,7 +14,7 @@ export function TableSection({ fields, onUpdate }: TableSectionProps) {
   const [entryWeight, setEntryWeight] = useState(1);
 
   function patch(partial: Partial<TableFields>) {
-    onUpdate({ ...table, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   function roll() {

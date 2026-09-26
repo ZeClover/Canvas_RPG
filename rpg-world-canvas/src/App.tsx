@@ -19,6 +19,7 @@ import { MysteryBoardPanel } from "./components/panels/MysteryBoardPanel";
 import { PlayerKnowledgeViewPanel } from "./components/panels/PlayerKnowledgeViewPanel";
 import { RulesEnginePanel } from "./components/panels/RulesEnginePanel";
 import { RumorGeneratorPanel } from "./components/panels/RumorGeneratorPanel";
+import { SchedulePanel } from "./components/panels/SchedulePanel";
 import { SettlementsPanel } from "./components/panels/SettlementsPanel";
 import { TablesPanel } from "./components/panels/TablesPanel";
 import { Icons } from "./components/Icons";
@@ -188,6 +189,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [encountersOpen, setEncountersOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [tablesOpen, setTablesOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
@@ -325,6 +327,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     { key: "encounters", label: "Encontros", icon: Icons.shield, onClick: () => setEncountersOpen(true), visible: hasModule("combat_tracker") },
     { key: "calendar", label: "Calendário", icon: Icons.clock, onClick: () => setCalendarOpen(true), visible: hasModule("calendar_engine") },
     { key: "tables", label: "Tabelas", icon: Icons.dice, onClick: () => setTablesOpen(true), visible: hasModule("table_engine") },
+    { key: "schedule", label: "Onde estão agora", icon: Icons.compass, onClick: () => setScheduleOpen(true), visible: hasModule("schedule_engine") },
     { key: "export-image", label: "Exportar imagem PNG", icon: Icons.image, onClick: () => void exportCanvasImage(), visible: true },
     { key: "modules", label: "Módulos desta campanha", icon: Icons.toggles, onClick: () => setModulesOpen(true), visible: true },
   ];
@@ -585,6 +588,13 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
           enabledModules={enabledModules}
           onClose={() => setModulesOpen(false)}
           onChange={(modules) => store.setEnabledModules(modules)}
+        />
+      )}
+      {scheduleOpen && (
+        <SchedulePanel
+          entities={state.entities}
+          onClose={() => setScheduleOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
         />
       )}
       {presentationEntity && <PresentationView entity={presentationEntity} onClose={() => setPresentationEntityId(null)} />}

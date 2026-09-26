@@ -14,7 +14,7 @@ export function SettlementSection({ fields, onUpdate }: SettlementSectionProps) 
   const [logNote, setLogNote] = useState("");
 
   function patch(partial: Partial<SettlementFields>) {
-    onUpdate({ ...settlement, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

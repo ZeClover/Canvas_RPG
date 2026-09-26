@@ -24,7 +24,7 @@ export function EncounterSection({ fields, allEntities, onUpdate }: EncounterSec
   const [logNote, setLogNote] = useState("");
 
   function patch(partial: Partial<EncounterFields>) {
-    onUpdate({ ...encounter, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   function patchCombatant(id: string, partial: Partial<Combatant>) {

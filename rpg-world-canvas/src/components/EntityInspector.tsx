@@ -20,6 +20,7 @@ import { ProjectSection } from "./sections/ProjectSection";
 import { QuestSection } from "./sections/QuestSection";
 import { ResourceSection } from "./sections/ResourceSection";
 import { RuleSection } from "./sections/RuleSection";
+import { ScheduleSection } from "./sections/ScheduleSection";
 import { RumorSection } from "./sections/RumorSection";
 import { SceneSection } from "./sections/SceneSection";
 import { SessionSection } from "./sections/SessionSection";
@@ -215,6 +216,10 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
       {showKindSection && entity.kind === "encounter" && <EncounterSection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "table" && <TableSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "journey" && <JourneySection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
+
+      {!isGroup && enabledModules.includes("schedule_engine") && (
+        <ScheduleSection fields={entity.fields} allEntities={allEntities} currentEntityId={entity.id} onUpdate={(fields) => onUpdate({ fields })} />
+      )}
 
       <div className="size-fields">
         <label>Largura<input value={Math.round(entity.width)} inputMode="numeric" onChange={(event) => onUpdate({ width: Math.max(80, Number(event.target.value) || entity.width) })} /></label>

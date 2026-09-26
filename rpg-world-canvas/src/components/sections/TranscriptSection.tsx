@@ -25,7 +25,7 @@ export function TranscriptSection({ fields, onUpdate, onCreateFromSelection }: T
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   function patch(partial: Partial<TranscriptFields>) {
-    onUpdate({ ...transcript, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   function handleSelect() {

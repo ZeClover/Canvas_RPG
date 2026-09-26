@@ -9,7 +9,7 @@ export function EcologySection({ fields, onUpdate }: EcologySectionProps) {
   const ecology = readEcologyFields(fields);
 
   function patch(partial: Partial<EcologyFields>) {
-    onUpdate({ ...ecology, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

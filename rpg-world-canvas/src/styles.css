@@ -424,6 +424,15 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .presentation-hidden, .presentation-partial { display: grid; gap: 10px; justify-items: center; color: #8994aa; }
 .presentation-hidden p, .presentation-partial p { max-width: 480px; margin: 0; font-size: 14px; line-height: 1.6; }
 
+/* Agenda / Schedule Engine */
+.schedule-entry-row { gap: 6px; }
+.schedule-entry-label { flex: 1; min-width: 0; height: 26px; padding: 0 7px; color: #dce1ed; background: transparent; border: 1px solid #242c3d; border-radius: 6px; font-size: 10px; }
+.schedule-entry-note { flex: 1; min-width: 0; height: 26px; padding: 0 7px; color: #8994aa; background: transparent; border: 1px solid #242c3d; border-radius: 6px; font-size: 10px; }
+.schedule-group { margin-bottom: 18px; }
+.schedule-group:last-child { margin-bottom: 0; }
+.schedule-group-heading { display: block; width: 100%; margin-bottom: 8px; padding: 8px 10px; color: #cbbcff; text-align: left; background: rgba(167,139,250,.08); border: 1px solid rgba(167,139,250,.2); border-radius: 9px; cursor: pointer; font-size: 11px; font-weight: 650; }
+.schedule-group-heading:disabled { color: #8994aa; background: rgba(255,255,255,.03); border-color: #242c3d; cursor: default; }
+
 /* Settlements panel (World Progression) */
 .settlement-list { max-height: 480px; }
 .settlement-row { align-items: center; }

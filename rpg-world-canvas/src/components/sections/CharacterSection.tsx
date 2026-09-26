@@ -14,7 +14,7 @@ export function CharacterSection({ fields, onUpdate }: CharacterSectionProps) {
   const [attrValue, setAttrValue] = useState("");
 
   function patch(partial: Partial<CharacterFields>) {
-    onUpdate({ ...character, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   function patchAttribute(id: string, partial: Partial<AttributeEntry>) {

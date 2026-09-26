@@ -13,7 +13,7 @@ export function ForeshadowingSection({ fields, onUpdate }: ForeshadowingSectionP
   const [logNote, setLogNote] = useState("");
 
   function patch(partial: Partial<ForeshadowingFields>) {
-    onUpdate({ ...foreshadowing, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

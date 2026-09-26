@@ -9,7 +9,7 @@ export function EconomySection({ fields, onUpdate }: EconomySectionProps) {
   const economy = readEconomyFields(fields);
 
   function patch(partial: Partial<EconomyFields>) {
-    onUpdate({ ...economy, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

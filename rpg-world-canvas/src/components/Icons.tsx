@@ -45,4 +45,5 @@ export const Icons = {
   forward: (props: IconProps) => <IconBase {...props}><path d="m5 6 6 6-6 6" /><path d="m13 6 6 6-6 6" /></IconBase>,
   dice: (props: IconProps) => <IconBase {...props}><rect x="3.5" y="3.5" width="17" height="17" rx="4" /><circle cx="8.3" cy="8.3" r="1.1" fill="currentColor" stroke="none" /><circle cx="15.7" cy="8.3" r="1.1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" /><circle cx="8.3" cy="15.7" r="1.1" fill="currentColor" stroke="none" /><circle cx="15.7" cy="15.7" r="1.1" fill="currentColor" stroke="none" /></IconBase>,
   monitor: (props: IconProps) => <IconBase {...props}><rect x="2.5" y="4" width="19" height="13" rx="2" /><path d="M8 20h8M12 17v3" /></IconBase>,
+  compass: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="m14.8 9.2-2 5.6-5.6 2 2-5.6Z" /></IconBase>,
 };

@@ -11,7 +11,7 @@ export function ProjectSection({ fields, onUpdate }: ProjectSectionProps) {
   const progress = projectProgress(project);
 
   function patch(partial: Partial<ProjectFields>) {
-    onUpdate({ ...project, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

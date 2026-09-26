@@ -16,7 +16,7 @@ export function RuleSection({ fields, allEntities, onUpdate }: RuleSectionProps)
   const candidates = [...allEntities].filter((entity) => entity.kind !== "rule" && entity.kind !== "group").sort((a, b) => a.title.localeCompare(b.title));
 
   function patch(partial: Partial<RuleFields>) {
-    onUpdate({ ...rule, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

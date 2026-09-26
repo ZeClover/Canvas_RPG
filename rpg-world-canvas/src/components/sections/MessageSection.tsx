@@ -9,7 +9,7 @@ export function MessageSection({ fields, onUpdate }: MessageSectionProps) {
   const message = readMessageFields(fields);
 
   function patch(partial: Partial<MessageFields>) {
-    onUpdate({ ...message, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   return (

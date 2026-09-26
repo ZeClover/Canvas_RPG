@@ -18,7 +18,7 @@ export function FactionSection({ fields, onUpdate }: FactionSectionProps) {
   const [logNote, setLogNote] = useState("");
 
   function patch(partial: Partial<FactionFields>) {
-    onUpdate({ ...faction, ...partial });
+    onUpdate({ ...fields, ...partial });
   }
 
   function patchClock(id: string, next: FactionClock) {
