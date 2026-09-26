@@ -1,4 +1,4 @@
-# RPG World Canvas — v0.11.0 (Fase 7 + extras + Fases 8–10)
+# RPG World Canvas — v0.11.1 (Fase 7 + extras + Fases 8–10 + auditoria)
 
 Um motor visual de campanhas de RPG de mesa: NPCs, quests, locais, facções, segredos, sessões e tudo mais vivem como o **mesmo dado**, visto de formas diferentes (Canvas, Views, busca). Não é um VTT, não é uma wiki, não é um gerenciador de projeto — é uma memória visual e interativa do universo.
 
@@ -169,6 +169,22 @@ Essa última ferramenta só funciona porque corrigi um bug que ela expôs: quase
 - **Downtime Engine**: novo tipo de card `downtime` — uma atividade entre sessões (forjar, treinar, pesquisar) vinculada a um personagem ou NPC já existente, com dias necessários vs. gastos e progresso sempre **derivado** (nunca armazenado, mesma disciplina do Project Engine). Gastar dias é manual, tipicamente ao lado de avançar o Calendário.
 - **Visão do grupo**: painel novo, mas sem `ModuleKey` novo — usa o `character_sheet` que já existia. Lista todo personagem com uma barra de PV, nível e condições, ordenado do mais ferido pro mais saudável, pra responder "quem tá machucado" sem abrir card por card no meio de um combate.
 
+## v0.11.1: auditoria completa (estabilidade, dados, segurança, desempenho, UX)
+
+Revisão fim a fim do app, reproduzindo e corrigindo problemas reais em vez de só listar sugestões — nenhuma funcionalidade removida, nenhum dado migrado. Cinco correções, todas com teste de regressão:
+
+1. **[Crítico] Exportar PNG travava sem aviso** com um card usando imagem externa por link: `CanvasEngine.getImage()` desenhava a imagem cross-origin sem `crossOrigin`, então `toBlob()` lançava `SecurityError` (canvas "tainted") como uma rejeição de Promise não tratada. Corrigido com fallback de `crossOrigin` (tenta anônimo, recarrega sem se falhar) e `try/catch` em `exportPNG()`; a UI agora mostra um aviso claro em vez de não fazer nada.
+2. **[Crítico] Restaurar backup não restaurava de verdade** — `restoreBackup()` fazia um upsert das entidades do backup mas nunca apagava o que foi criado *depois* dele, então a campanha "restaurada" ficava com uma mistura de dados velhos e novos. Corrigido para calcular e apagar exatamente o que não está mais no snapshot (entidades, relações e views).
+3. **[Crítico] Edição perdida em autosave concorrente** — duas edições rápidas na mesma entidade durante o debounce de 650ms do autosave podiam fazer a segunda edição ser descartada silenciosamente do disco (a flag "suja" era limpa após qualquer save bem-sucedido, mesmo se o valor já tinha mudado de novo enquanto o save estava em voo). Corrigido: só limpa a flag se o valor salvo ainda é o mesmo objeto que está no estado atual.
+4. **[Alto] CSP do build desktop bloqueava imagem por link** — a correção 1 só é alcançável no app empacotado (Tauri) se a CSP permitir `http:`/`https:` em `img-src`; ela só permitia `asset:`/`blob:`/`data:`. Corrigida.
+5. **[Médio] Painéis não fechavam com `Esc`** — de ~21 diálogos (`dialog-backdrop`/`tool-backdrop`), só 3 tratavam a tecla Escape; os outros 19 (Safety Tools, Módulos, Calendário, Tabelas, Agenda, Visão do grupo, Regras, Progresso do mundo, Gerador de rumores, Saúde da campanha, O que os jogadores sabem, Cartas & mensageiros, Encontros, Causalidade, Multiverso, Economia & recursos, Mistério, Conhecimento, Timeline, e os diálogos internos de "nova campanha"/"restaurar backup") só fechavam por clique fora ou pelo botão "Fechar". Corrigido com um hook compartilhado (`useEscapeToClose`) aplicado nos 19.
+
+Áreas revisadas e confirmadas sem problema (sem mudança de código): integridade de persistência (diff granular, cascata de exclusão, colisão de ID em import), varredura de segurança client-side (sem `eval`/`innerHTML` com dado do usuário, allowlist de protocolo em URL de imagem, sem segredo hardcoded), memory leaks do `CanvasEngine` (listeners e loop de `requestAnimationFrame` com cleanup simétrico), casos de borda numéricos que alimentam barra visual (PV do grupo, progresso de Downtime, relógios de Facção — todos grampeados corretamente), truncamento de texto longo (elipse consistente via CSS em toda lista/título).
+
+Medido (não estimado), campanha sintética de ~2000 entidades: abrir a campanha 696ms; `fitAll()` + assentar câmera 402.8ms; exportar PNG 1239.2ms; custo médio de frame durante pan ~19.2ms (orçamento de 60fps é 16.6ms — a diferença é esperada neste sandbox Linux headless sem aceleração de GPU real, e o orçamento de renderização já existente (`MAX_RENDERED_ENTITIES = 1400`) limita quantas entidades são desenhadas por frame independente do tamanho total da campanha).
+
+Pendências conhecidas, de baixo impacto, não corrigidas nesta rodada: `saveManualBackup()` existe e tem teste, mas não tem nenhum botão na UI que a chame; `package.json` ainda declara `"version": "0.1.0"` (cosmético, `private: true`, nunca lido em runtime). Alguns campos numéricos (PV de personagem/combatente, iniciativa, relógio de quest, estoque de recurso) aceitam digitar um valor negativo sem grampear — verificado que nenhum deles alimenta cálculo de porcentagem/barra visual, então o pior caso é um número cosmético estranho, não uma tela quebrada.
+
 ## O que ainda não existe
 
 Todas as 7 fases do plano original, os nove extras pós-Fase 7 e os onze itens das Fases 8–10 foram implementados. O que resta é puramente deferido por escopo (não por dificuldade): auto-layout automático do Canvas, temas além do escuro padrão.
@@ -198,7 +214,7 @@ Pré-requisitos (o `BUILD_WINDOWS.bat` verifica cada um e explica como instalar 
 ## Testes
 
 ```bash
-npm test           # 222 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
+npm test           # 225 testes automatizados (Vitest) — inclui IndexedDB real via fake-indexeddb
 npm run build       # TypeScript estrito + build de produção (Vite)
 npx playwright install chromium   # uma vez
 npm run test:e2e    # teste visual/end-to-end (Playwright): abre a campanha de exemplo, arrasta um NPC real,

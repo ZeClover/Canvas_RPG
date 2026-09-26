@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-title Compilar RPG World Canvas v0.11.0
+title Compilar RPG World Canvas v0.11.1
 cd /d "%~dp0"
 
 echo ===============================================================
@@ -158,10 +158,10 @@ echo Executavel portatil:
 echo   %cd%\src-tauri\target\release\RPG World Canvas.exe
 echo.
 echo Instalador NSIS:
-echo   %cd%\src-tauri\target\release\bundle\nsis\RPG World Canvas_0.11.0_x64-setup.exe
+echo   %cd%\src-tauri\target\release\bundle\nsis\RPG World Canvas_0.11.1_x64-setup.exe
 echo.
 echo Instalador MSI:
-echo   %cd%\src-tauri\target\release\bundle\msi\RPG World Canvas_0.11.0_x64_en-US.msi
+echo   %cd%\src-tauri\target\release\bundle\msi\RPG World Canvas_0.11.1_x64_en-US.msi
 echo.
 pause
 exit /b 0
