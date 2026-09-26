@@ -1,3 +1,4 @@
+import { readCalendarConfig } from "../domain/calendarFields";
 import { createId } from "../domain/id";
 import { defaultEnabledModules, isModuleKey, type ModuleKey } from "../domain/modules";
 import { ENTITY_KINDS } from "../domain/types";
@@ -210,6 +211,7 @@ function parseCampaign(value: unknown): Campaign {
     enabledModules: parseEnabledModules(source.enabledModules),
     favoriteEntityIds: parseStringIdList(source.favoriteEntityIds),
     favoriteViewIds: parseStringIdList(source.favoriteViewIds),
+    calendar: readCalendarConfig(source.calendar),
     createdAt: number(source.createdAt, "Criação da campanha", 0, Number.MAX_SAFE_INTEGER),
     updatedAt: number(source.updatedAt, "Atualização da campanha", 0, Number.MAX_SAFE_INTEGER),
   };

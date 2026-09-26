@@ -6,6 +6,7 @@
 // write these same two tables, never a separate store. That is the whole
 // point of the "não quero informação duplicada" requirement.
 
+import type { CalendarConfig } from "./calendarFields";
 import type { ModuleKey } from "./modules";
 
 export type EntityKind =
@@ -172,6 +173,9 @@ export interface Campaign {
    * purely a navigation convenience, never referenced by any rule/relation. */
   favoriteEntityIds: string[];
   favoriteViewIds: string[];
+  /** Calendar Engine (Fase 8): a custom in-fiction calendar and clock the
+   * GM advances by hand — see domain/calendarFields.ts. */
+  calendar: CalendarConfig;
   createdAt: number;
   updatedAt: number;
 }

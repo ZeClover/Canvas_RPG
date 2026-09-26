@@ -1,3 +1,4 @@
+import { defaultCalendarConfig } from "../domain/calendarFields";
 import { createId } from "../domain/id";
 import { kindConfig } from "../domain/entityKindRegistry";
 import { defaultEnabledModules } from "../domain/modules";
@@ -85,6 +86,7 @@ export function createDemoCampaign(): CampaignData {
     enabledModules: defaultEnabledModules(),
     favoriteEntityIds: [],
     favoriteViewIds: [],
+    calendar: defaultCalendarConfig(),
     createdAt: now,
     updatedAt: now,
   };
@@ -320,6 +322,7 @@ export function createSecondDemoCampaign(): CampaignData {
     enabledModules: defaultEnabledModules().filter((key) => key !== "ecology_engine" && key !== "settlement_engine"),
     favoriteEntityIds: [],
     favoriteViewIds: [],
+    calendar: defaultCalendarConfig(),
     createdAt: now,
     updatedAt: now,
   };

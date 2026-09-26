@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { BackupInfo } from "../data/repository";
+import { defaultCalendarConfig } from "../domain/calendarFields";
 import { createId } from "../domain/id";
 import { defaultEnabledModules } from "../domain/modules";
 import type { Campaign, UniverseLink } from "../domain/types";
@@ -69,6 +70,7 @@ export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, o
       enabledModules: defaultEnabledModules(),
       favoriteEntityIds: [],
       favoriteViewIds: [],
+      calendar: defaultCalendarConfig(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });

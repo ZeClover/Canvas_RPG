@@ -7,6 +7,7 @@ import { CanvasToolbar } from "./components/CanvasToolbar";
 import { CommandPalette } from "./components/CommandPalette";
 import { EntityInspector } from "./components/EntityInspector";
 import { Minimap } from "./components/Minimap";
+import { CalendarPanel } from "./components/panels/CalendarPanel";
 import { CampaignHealthPanel } from "./components/panels/CampaignHealthPanel";
 import { CausalityPanel } from "./components/panels/CausalityPanel";
 import { EconomyResourcesPanel } from "./components/panels/EconomyResourcesPanel";
@@ -181,6 +182,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [playerViewOpen, setPlayerViewOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [encountersOpen, setEncountersOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
@@ -307,6 +309,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     { key: "player-view", label: "O que os jogadores sabem", icon: Icons.eye, onClick: () => setPlayerViewOpen(true), visible: hasModule("player_knowledge_view") },
     { key: "messages", label: "Cartas & mensageiros", icon: Icons.mail, onClick: () => setMessagesOpen(true), visible: hasModule("world_communication") },
     { key: "encounters", label: "Encontros", icon: Icons.shield, onClick: () => setEncountersOpen(true), visible: hasModule("combat_tracker") },
+    { key: "calendar", label: "Calendário", icon: Icons.clock, onClick: () => setCalendarOpen(true), visible: hasModule("calendar_engine") },
     { key: "export-image", label: "Exportar imagem PNG", icon: Icons.image, onClick: () => void exportCanvasImage(), visible: true },
     { key: "modules", label: "Módulos desta campanha", icon: Icons.toggles, onClick: () => setModulesOpen(true), visible: true },
   ];
@@ -538,6 +541,14 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
           entities={state.entities}
           onClose={() => setEncountersOpen(false)}
           onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
+        />
+      )}
+      {calendarOpen && (
+        <CalendarPanel
+          calendar={state.campaign.calendar}
+          onClose={() => setCalendarOpen(false)}
+          onAdvance={(days, note) => store.advanceCalendar(days, note)}
+          onUpdateConfig={(partial) => store.updateCalendarConfig(partial)}
         />
       )}
       {modulesOpen && (

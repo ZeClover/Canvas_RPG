@@ -1,4 +1,5 @@
 import { type AlignMode, computeAlignment, computeDistribution, type DistributeAxis } from "../domain/alignment";
+import type { CalendarConfig } from "../domain/calendarFields";
 import { kindConfig } from "../domain/entityKindRegistry";
 import { createId } from "../domain/id";
 import type { ModuleKey } from "../domain/modules";
@@ -505,6 +506,20 @@ export class CampaignStore {
     const current = this.state.campaign.favoriteViewIds;
     const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
     this.updateCampaign({ favoriteViewIds: next });
+  }
+
+  /** Calendar Engine: outside undo, same reasoning as everything else
+   * updateCampaign touches — this is campaign config/clock state, not an
+   * edit a GM would want to Ctrl+Z mid-session. */
+  updateCalendarConfig(partial: Partial<CalendarConfig>): void {
+    this.updateCampaign({ calendar: { ...this.state.campaign.calendar, ...partial } });
+  }
+
+  advanceCalendar(days: number, note: string): void {
+    const config = this.state.campaign.calendar;
+    const nextDay = Math.max(0, config.currentDay + days);
+    const entry = { id: createId("calendarlog"), at: Date.now(), daysAdvanced: days, note };
+    this.updateCampaign({ calendar: { ...config, currentDay: nextDay, log: [...config.log, entry] } });
   }
 
   // ---- views ----------------------------------------------------------------

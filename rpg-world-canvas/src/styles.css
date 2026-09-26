@@ -380,6 +380,14 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .faction-clock-dot { width: 20px; height: 20px; padding: 0; background: rgba(255,255,255,.05); border: 1px solid #283044; border-radius: 50%; cursor: pointer; }
 .faction-clock-dot.is-filled { background: #facc15; border-color: #facc15; }
 
+/* Calendar Engine */
+.calendar-current-date { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; padding: 12px 14px; background: rgba(167,139,250,.06); border: 1px solid rgba(167,139,250,.2); border-radius: 11px; }
+.calendar-current-label { color: #f7f8ff; font-size: 15px; font-weight: 650; }
+.calendar-current-day { color: #8994aa; font-size: 10px; font-variant-numeric: tabular-nums; }
+.calendar-month-list li { gap: 6px; }
+.calendar-month-name { flex: 1; min-width: 0; height: 26px; padding: 0 7px; color: #dce1ed; background: transparent; border: 1px solid #242c3d; border-radius: 6px; font-size: 10px; }
+.calendar-month-days { flex: 0 0 60px; height: 26px; padding: 0 7px; color: #dce1ed; background: transparent; border: 1px solid #242c3d; border-radius: 6px; font-size: 10px; }
+
 /* Settlements panel (World Progression) */
 .settlement-list { max-height: 480px; }
 .settlement-row { align-items: center; }
