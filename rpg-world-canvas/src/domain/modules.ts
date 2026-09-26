@@ -20,7 +20,8 @@ export type ModuleKey =
   | "scene_composer" | "theme_foreshadowing" | "ecology_engine" | "rumor_engine"
   | "transcript_engine" | "campaign_health" | "player_knowledge_view"
   | "world_communication" | "combat_tracker" | "character_sheet"
-  | "faction_engine" | "calendar_engine" | "table_engine";
+  | "faction_engine" | "calendar_engine" | "table_engine" | "travel_engine"
+  | "presentation_mode" | "schedule_engine";
 
 export interface ModuleConfig {
   key: ModuleKey;
@@ -55,6 +56,9 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   { key: "faction_engine", label: "Faction Engine", description: "Objetivo, recursos, standing e relógios de progresso (estilo clocks) por facção.", phase: 8 },
   { key: "calendar_engine", label: "Calendar Engine", description: "Calendário customizável e relógio in-fiction da campanha, avançado manualmente pelo mestre.", phase: 8 },
   { key: "table_engine", label: "Random Table Engine", description: "Tabelas reutilizáveis com sorteio ponderado (nomes, loot, encontros, o que for) — RNG puro, sem IA.", phase: 8 },
+  { key: "travel_engine", label: "Travel & Journey Engine", description: "Trechos de viagem entre locais, com distância, dias e progresso — planejado pelo mestre, nunca simulado.", phase: 9 },
+  { key: "presentation_mode", label: "Modo Apresentação", description: "Botão \"Mostrar aos jogadores\" abre qualquer elemento em tela cheia, respeitando a visibilidade já definida.", phase: 9 },
+  { key: "schedule_engine", label: "Agenda", description: "Onde alguém ou algo está em cada período — funciona em qualquer elemento, com painel \"Onde estão agora\" agrupado por local.", phase: 9 },
 ];
 
 export const ALL_MODULE_KEYS: ModuleKey[] = MODULE_REGISTRY.map((module) => module.key);
@@ -96,6 +100,7 @@ export const MODULE_FOR_KIND: Partial<Record<EntityKind, ModuleKey>> = {
   player: "character_sheet",
   faction: "faction_engine",
   table: "table_engine",
+  journey: "travel_engine",
 };
 
 export function isKindSectionEnabled(kind: EntityKind, enabledModules: ModuleKey[]): boolean {

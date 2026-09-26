@@ -55,6 +55,10 @@ export type EntityKind =
   // (names, loot, rumors, weather — anything) the GM rolls on. Pure RNG,
   // never AI: same "the GM stays in control" discipline as Rules Engine.
   | "table"
+  // Travel & Journey Engine: a planned/ongoing route made of legs between
+  // existing locations. Distance/days/supply are GM-authored notes, never
+  // simulated — see domain/journeyFields.ts.
+  | "journey"
   // Structural kind: a resizable/draggable area on the canvas that other
   // entities can belong to (via their groupId). Rendered as a bounded
   // region, not a card — everything else about it (tags, search, views,
@@ -66,7 +70,7 @@ export const ENTITY_KINDS: EntityKind[] = [
   "location", "city", "region", "faction", "creature", "item",
   "secret", "knowledge", "clue", "rumor", "decision", "possibility",
   "scene", "project", "resource", "theme", "foreshadowing",
-  "transcript", "universe", "rule", "message", "encounter", "table", "group",
+  "transcript", "universe", "rule", "message", "encounter", "table", "journey", "group",
 ];
 
 export type Visibility = "gm_only" | "revealed" | "partial";

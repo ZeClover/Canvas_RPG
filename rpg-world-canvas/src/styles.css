@@ -401,6 +401,19 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .table-quickroll-button { display: flex; align-items: center; gap: 6px; flex-shrink: 0; height: 40px; padding: 0 12px; color: #fde68a; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.3); border-radius: 9px; cursor: pointer; font-size: 11px; font-weight: 650; }
 .table-quickroll-button:disabled { opacity: .4; cursor: default; }
 
+/* Travel & Journey Engine */
+.journey-progress { display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px 10px; color: #7dd3fc; background: rgba(14,165,233,.08); border: 1px solid rgba(14,165,233,.22); border-radius: 9px; font-size: 10px; font-variant-numeric: tabular-nums; }
+.journey-leg-list { display: grid; gap: 8px; margin: 0 0 8px; padding: 0; list-style: none; }
+.journey-leg { padding: 9px; background: #0c1019; border: 1px solid #242c3d; border-radius: 10px; }
+.journey-leg.is-done { opacity: .55; }
+.journey-leg-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.journey-leg-index { flex-shrink: 0; display: grid; place-items: center; width: 20px; height: 20px; color: #8994aa; background: rgba(255,255,255,.05); border-radius: 50%; font-size: 9px; font-weight: 700; }
+.journey-leg-row select { flex: 1; min-width: 0; height: 30px; padding: 0 6px; color: #dce1ed; background: #0c1019; border: 1px solid #283044; border-radius: 7px; font-size: 10px; }
+.journey-leg-arrow { flex-shrink: 0; color: #657088; }
+.journey-leg-done { display: flex; align-items: center; gap: 6px; color: #8994aa; font-size: 10px; text-transform: none; letter-spacing: 0; }
+.journey-leg-done input { accent-color: var(--violet); }
+.journey-add-leg { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 32px; margin-bottom: 14px; color: #cbbcff; background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.2); border-radius: 8px; cursor: pointer; font-size: 10px; }
+
 /* Settlements panel (World Progression) */
 .settlement-list { max-height: 480px; }
 .settlement-row { align-items: center; }

@@ -13,6 +13,7 @@ import { EconomySection } from "./sections/EconomySection";
 import { EncounterSection } from "./sections/EncounterSection";
 import { FactionSection } from "./sections/FactionSection";
 import { ForeshadowingSection } from "./sections/ForeshadowingSection";
+import { JourneySection } from "./sections/JourneySection";
 import { MessageSection } from "./sections/MessageSection";
 import { NpcSection } from "./sections/NpcSection";
 import { ProjectSection } from "./sections/ProjectSection";
@@ -209,6 +210,7 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
       {showKindSection && entity.kind === "message" && <MessageSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "encounter" && <EncounterSection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "table" && <TableSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "journey" && <JourneySection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
 
       <div className="size-fields">
         <label>Largura<input value={Math.round(entity.width)} inputMode="numeric" onChange={(event) => onUpdate({ width: Math.max(80, Number(event.target.value) || entity.width) })} /></label>

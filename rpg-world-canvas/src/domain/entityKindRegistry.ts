@@ -39,6 +39,7 @@ export const ENTITY_KIND_CONFIG: Record<EntityKind, EntityKindConfig> = {
   message: { label: "Mensagem", icon: "✉️", color: "#38bdf8", width: 240, height: 126 },
   encounter: { label: "Encontro", icon: "⚔️", color: "#ef4444", width: 260, height: 140 },
   table: { label: "Tabela", icon: "🎲", color: "#f59e0b", width: 220, height: 116 },
+  journey: { label: "Viagem", icon: "🧭", color: "#0ea5e9", width: 260, height: 140 },
   group: { label: "Grupo", icon: "🗂️", color: "#7767e9", width: 920, height: 620 },
 };
 
