@@ -38,7 +38,7 @@ import {
   seedCampaign,
   type BackupInfo,
 } from "./data/repository";
-import { createDemoCampaign } from "./data/seed";
+import { createDemoCampaign, createSecondDemoCampaign } from "./data/seed";
 import type { ModuleKey } from "./domain/modules";
 import type { CameraState, Campaign, EntityKind, UniverseLink, WorldBounds, WorldPoint } from "./domain/types";
 import { CampaignStore } from "./state/campaignStore";
@@ -66,11 +66,15 @@ export default function App() {
           return;
         }
         if (!campaignResult.value.length) {
-          // First run: seed one example campaign so there's something to
-          // explore immediately, matching every card type and relation type.
+          // First run: seed two example campaigns in different genres —
+          // matching every card/relation type and, just as important,
+          // showing the module system is a real per-campaign choice (the
+          // sci-fi one starts with Encounter Ecology and Settlement Engine
+          // off) rather than a fantasy-only afterthought.
           const demo = createDemoCampaign();
-          await seedCampaign(demo);
-          setCampaigns([demo.campaign]);
+          const secondDemo = createSecondDemoCampaign();
+          await Promise.all([seedCampaign(demo), seedCampaign(secondDemo)]);
+          setCampaigns([demo.campaign, secondDemo.campaign]);
           return;
         }
         setCampaigns(campaignResult.value);

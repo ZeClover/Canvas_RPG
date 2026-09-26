@@ -301,3 +301,140 @@ export function createDemoCampaign(): CampaignData {
     views: createDefaultViews(campaign.id),
   };
 }
+
+/** Second example campaign, deliberately a different genre (sci-fi salvage
+ * crew instead of magic academy) — same generic entity kinds/module system,
+ * proving neither is fantasy-specific. Also seeded with a curated module
+ * subset (no Encounter Ecology or Settlement Engine — a lone derelict
+ * station isn't a wilderness or a growing city) instead of everything on,
+ * to show the per-campaign toggle is a real starting choice, not just a
+ * checkbox nobody touches. */
+export function createSecondDemoCampaign(): CampaignData {
+  const now = Date.now();
+  const campaign: Campaign = {
+    id: createId("campaign"),
+    title: "Estação Kessler",
+    description: "Uma tripulação de resgate/salvamento investiga uma estação espacial à deriva.",
+    color: "#38bdf8",
+    icon: "🛰️",
+    enabledModules: defaultEnabledModules().filter((key) => key !== "ecology_engine" && key !== "settlement_engine"),
+    favoriteEntityIds: [],
+    favoriteViewIds: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const groupSeeds: EntitySeed[] = [
+    { key: "ship", kind: "group", title: "NAVE HORIZONTE", x: -300, y: -300 },
+    { key: "station", kind: "group", title: "ESTAÇÃO KESSLER", x: 2100, y: -300 },
+  ];
+  const groupIds = new Map<string, string>();
+  const groupSizes: Record<string, { width: number; height: number }> = {
+    ship: { width: 1800, height: 1000 },
+    station: { width: 1800, height: 1000 },
+  };
+  const groups = groupSeeds.map((seed) => {
+    const entity = buildEntity(campaign.id, seed, groupIds, now);
+    entity.width = groupSizes[seed.key].width;
+    entity.height = groupSizes[seed.key].height;
+    groupIds.set(seed.key, entity.id);
+    return entity;
+  });
+
+  const entitySeeds: EntitySeed[] = [
+    { key: "n_reyes", kind: "npc", title: "Capitã Reyes", x: -180, y: -180, summary: "Comanda a Horizonte há oito anos; não confia no Consórcio.", tags: ["capitã"], groupKey: "ship" },
+    { key: "n_ibrahim", kind: "npc", title: "Doc Ibrahim", x: 160, y: -180, summary: "Engenheiro e médico de bordo, cético quanto ao sinal.", tags: ["engenheiro"], groupKey: "ship" },
+    { key: "n_eco", kind: "npc", title: "ECO", x: 500, y: -180, summary: "IA da nave. Educada demais para ser inteiramente confiável.", important: true, groupKey: "ship" },
+    { key: "f_halcyon", kind: "faction", title: "Consórcio Halcyon", x: -180, y: 100, summary: "Dona legal dos destroços — quer a estação intacta, a qualquer custo.", groupKey: "ship" },
+    { key: "q_signal", kind: "quest", title: "Investigar o Sinal", x: 160, y: 100, summary: "Um sinal de socorro sai da Estação Kessler há três dias.", status: "Ativa", important: true, groupKey: "ship" },
+    { key: "res_oxygen", kind: "resource", title: "Oxigênio (Horizonte)", x: 500, y: 100, summary: "Reserva da nave; cai rápido em EVA prolongada.", groupKey: "ship", fields: { stock: 68, unit: "%", criticalThreshold: 20, regenNote: "Recicladores restauram 5%/dia em operação normal.", notes: "Cair abaixo de 20% cancela EVAs." } },
+    { key: "msg_distress", kind: "message", title: "Sinal de socorro da Kessler", x: -180, y: 380, summary: "Transmissão em loop, sem resposta a chamadas.", groupKey: "ship", fields: { medium: "Outro", deliveryStatus: "Entregue", content: "...kessler chamando... alguém... o núcleo não...", sentDate: "3 dias antes da chegada da Horizonte" } },
+    { key: "e_breach", kind: "event", title: "Brecha no casco", x: 160, y: 380, summary: "Alarme dispara no convés de carga da Horizonte.", groupKey: "ship" },
+    {
+      key: "l_kessler", kind: "location", title: "Estação Kessler", x: 2200, y: -180, summary: "À deriva há seis meses; luzes de emergência ainda ativas.", important: true, groupKey: "station",
+    },
+    { key: "l_cargo", kind: "location", title: "Convés de Carga (Kessler)", x: 2560, y: -180, summary: "Contêineres selados, um deles amassado por dentro.", groupKey: "station" },
+    { key: "item_core", kind: "item", title: "Núcleo de Dados Recuperado", x: 2200, y: 100, summary: "Criptografado; o Consórcio pagaria bem por ele intacto.", groupKey: "station", fields: { price: 4000, currency: "créditos", rarity: "Raro", tradeNotes: "O Consórcio não sabe que já foi recuperado." } },
+    { key: "s_core", kind: "secret", title: "O que o núcleo realmente registrou", x: 2560, y: 100, summary: "Só ECO sabe — e não contou tudo à Capitã Reyes.", groupKey: "station" },
+    { key: "r_signal", kind: "rumor", title: "\"O sinal não é da tripulação da Kessler\"", x: 2200, y: 380, summary: "Comentado nos canais abertos da rota comercial.", groupKey: "station", fields: { truth: "Verdadeiro", source: "Tripulações de outras naves na rota", spreadNotes: "Ninguém leva a sério até a Horizonte chegar perto.", templateId: null }, visibility: "revealed" },
+  ];
+
+  const entityIds = new Map<string, string>();
+  const baseEntities = entitySeeds.map((seed) => {
+    const entity = buildEntity(campaign.id, seed, groupIds, now);
+    entityIds.set(seed.key, entity.id);
+    return entity;
+  });
+
+  // Regra de exemplo: oxigênio crítico marca a IA como importante (chamando
+  // atenção do mestre), mesma disciplina determinística das outras regras.
+  const ruleFields = {
+    enabled: true,
+    trigger: { kind: "status_equals", entityId: entityIds.get("res_oxygen")!, value: "Crítico" },
+    action: { kind: "mark_important", targetEntityId: entityIds.get("n_eco")!, value: "" },
+    log: [],
+  };
+  const ruleEntity: Entity = {
+    id: createId("entity"),
+    campaignId: campaign.id,
+    kind: "rule",
+    title: "Oxigênio crítico chama atenção para ECO",
+    summary: "Se o oxigênio da Horizonte ficar Crítico, ECO é marcada como importante automaticamente.",
+    color: null,
+    icon: null,
+    imageSrc: null,
+    tags: [],
+    status: null,
+    fields: ruleFields,
+    x: -180,
+    y: 660,
+    width: kindConfig("rule").width,
+    height: kindConfig("rule").height,
+    groupId: groupIds.get("ship") ?? null,
+    visibility: "gm_only",
+    important: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+  entityIds.set("rule_oxygen_critical", ruleEntity.id);
+  const entities = [...baseEntities, ruleEntity];
+
+  const relationSeeds: Array<{ from: string; to: string; type: RelationType; label?: string }> = [
+    { from: "n_reyes", to: "n_ibrahim", type: "trusts" },
+    { from: "n_reyes", to: "f_halcyon", type: "fears" },
+    { from: "n_ibrahim", to: "f_halcyon", type: "member_of" },
+    { from: "q_signal", to: "l_kessler", type: "happens_at" },
+    { from: "e_breach", to: "res_oxygen", type: "leads_to" },
+    { from: "n_eco", to: "s_core", type: "knows_about" },
+    { from: "item_core", to: "s_core", type: "reveals" },
+    { from: "item_core", to: "l_cargo", type: "originated_from" },
+    { from: "r_signal", to: "l_kessler", type: "originated_from" },
+    { from: "msg_distress", to: "n_eco", type: "originated_from" },
+    { from: "msg_distress", to: "n_reyes", type: "addressed_to" },
+    { from: "q_signal", to: "item_core", type: "leads_to" },
+  ];
+  const relations: Relation[] = relationSeeds.map((seed) => ({
+    id: createId("relation"),
+    campaignId: campaign.id,
+    fromEntityId: entityIds.get(seed.from)!,
+    toEntityId: entityIds.get(seed.to)!,
+    type: seed.type,
+    label: seed.label ?? "",
+    description: "",
+    date: null,
+    sessionId: null,
+    importance: null,
+    state: null,
+    fields: {},
+    history: [],
+    createdAt: now,
+    updatedAt: now,
+  }));
+
+  return {
+    campaign,
+    entities: [...groups, ...entities],
+    relations,
+    views: createDefaultViews(campaign.id),
+  };
+}
