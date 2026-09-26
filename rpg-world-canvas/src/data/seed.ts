@@ -86,7 +86,12 @@ export function createDemoCampaign(): CampaignData {
     enabledModules: defaultEnabledModules(),
     favoriteEntityIds: [],
     favoriteViewIds: [],
-    calendar: defaultCalendarConfig(),
+    calendar: {
+      ...defaultCalendarConfig(),
+      epochLabel: "Era da Academia",
+      currentDay: 132,
+      log: [{ id: "seed_calendar_log_1", at: now, daysAdvanced: 132, note: "Início de campanha — meio do terceiro trimestre letivo." }],
+    },
     createdAt: now,
     updatedAt: now,
   };
@@ -116,7 +121,24 @@ export function createDemoCampaign(): CampaignData {
     { key: "n_potter", kind: "npc", title: "Potter Magwood", x: -180, y: -180, summary: "Professor marcado por um trauma com magia exagerada.", tags: ["professor"], groupKey: "campus" },
     { key: "n_vivian", kind: "npc", title: "Vivian Ashcombe", x: 160, y: -180, summary: "Bibliotecária que sabe mais do que aparenta.", tags: ["biblioteca"], groupKey: "campus" },
     { key: "n_kaleb", kind: "npc", title: "Kaleb Orne", x: 500, y: -180, summary: "Aluno do último ano, ambicioso.", tags: ["aluno"], groupKey: "campus" },
-    { key: "f_order", kind: "faction", title: "Ordem dos Selos", x: -180, y: 140, summary: "Mantém a Dungeon contida há gerações.", groupKey: "campus" },
+    {
+      key: "p_elenora", kind: "player", title: "Elenora Thistle", x: 900, y: -180, summary: "Aluna do terceiro ano, teimosa e curiosa demais para o próprio bem.", tags: ["jogadora"], groupKey: "campus",
+      fields: {
+        hp: 18, maxHp: 22, level: "3",
+        attributes: [{ id: "seed_attr_foco", label: "Foco", value: "d8" }, { id: "seed_attr_vigor", label: "Vigor", value: "d6" }],
+        conditions: [], notes: "Quer provar que consegue entrar na Dungeon sozinha.",
+      },
+    },
+    {
+      key: "f_order", kind: "faction", title: "Ordem dos Selos", x: -180, y: 140, summary: "Mantém a Dungeon contida há gerações.", groupKey: "campus",
+      fields: {
+        goal: "Conter o que vive na Dungeon até encontrar uma solução permanente.",
+        resources: "Poucos membros ativos, acesso a arquivos antigos, nenhum apoio oficial da Academia.",
+        standing: 20,
+        clocks: [{ id: "seed_clock_order", label: "A runa se rompe de vez", segments: 6, filled: 2 }],
+        log: [{ id: "seed_faction_log_order", at: now, note: "Reforçaram os selos às pressas depois do alarme da Sessão 02." }],
+      },
+    },
     { key: "l_dungeon", kind: "location", title: "A Dungeon", x: 160, y: 140, summary: "Abre todas as noites, mas parece estar mudando.", important: true, groupKey: "campus" },
     { key: "l_library", kind: "location", title: "Biblioteca Proibida", x: 500, y: 140, summary: "Seção trancada sobre a Dungeon.", groupKey: "campus" },
     { key: "q_exercise", kind: "quest", title: "O Exercício Perigoso", x: 160, y: 420, summary: "Um professor propõe um treino arriscado demais.", status: "Ativa", groupKey: "campus", important: true },
@@ -208,6 +230,18 @@ export function createDemoCampaign(): CampaignData {
         ].join("\n"),
       },
     },
+    {
+      key: "table_dungeon_finds", kind: "table", title: "Achados na Dungeon", x: 900, y: 2220, summary: "O que o grupo encontra explorando os corredores mais fundos.", groupKey: "narrative",
+      fields: {
+        entries: [
+          { id: "seed_entry_1", text: "Uma moeda antiga, de um reino que não existe mais.", weight: 3 },
+          { id: "seed_entry_2", text: "Marcas de garras nas paredes, recentes.", weight: 2 },
+          { id: "seed_entry_3", text: "Um diário de aluno, páginas finais arrancadas.", weight: 1 },
+          { id: "seed_entry_4", text: "Silêncio absoluto — nada de interessante aqui.", weight: 4 },
+        ],
+        history: [],
+      },
+    },
   ];
 
   const entityIds = new Map<string, string>();
@@ -249,7 +283,45 @@ export function createDemoCampaign(): CampaignData {
     updatedAt: now,
   };
   entityIds.set("rule_dungeon_unstable", ruleEntity.id);
-  const entities = [...baseEntities, ruleEntity];
+
+  // Encontro de exemplo (Combat Tracker, Fase 8): combatentes ligados às
+  // entidades já existentes (a jogadora, o aliado, a criatura), mostrando
+  // como o vínculo opcional funciona sem duplicar nenhum dado delas.
+  const encounterEntity: Entity = {
+    id: createId("entity"),
+    campaignId: campaign.id,
+    kind: "encounter",
+    title: "Emboscada na Dungeon",
+    summary: "A Sombra ataca assim que o grupo se aproxima da porta rachada.",
+    color: null,
+    icon: null,
+    imageSrc: null,
+    tags: [],
+    status: null,
+    fields: {
+      active: true,
+      round: 1,
+      turnIndex: 0,
+      combatants: [
+        { id: "seed_combatant_elenora", entityId: entityIds.get("p_elenora"), name: "Elenora Thistle", initiative: 16, hp: 18, maxHp: 22, conditions: [], isAlly: true },
+        { id: "seed_combatant_kaleb", entityId: entityIds.get("n_kaleb"), name: "Kaleb Orne", initiative: 9, hp: 14, maxHp: 14, conditions: [], isAlly: true },
+        { id: "seed_combatant_shadow", entityId: entityIds.get("creature_shadow"), name: "Sombra da Dungeon", initiative: 12, hp: 26, maxHp: 26, conditions: [], isAlly: false },
+      ],
+      log: [{ id: "seed_encounter_log_1", at: now, note: "A sombra emerge da parede assim que a porta racha mais um pouco." }],
+    },
+    x: 900,
+    y: 680,
+    width: kindConfig("encounter").width,
+    height: kindConfig("encounter").height,
+    groupId: groupIds.get("campus") ?? null,
+    visibility: "gm_only",
+    important: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+  entityIds.set("encounter_dungeon_ambush", encounterEntity.id);
+
+  const entities = [...baseEntities, ruleEntity, encounterEntity];
 
   const relationSeeds: Array<{ from: string; to: string; type: RelationType; label?: string }> = [
     { from: "n_potter", to: "n_vivian", type: "trusts" },
@@ -322,7 +394,12 @@ export function createSecondDemoCampaign(): CampaignData {
     enabledModules: defaultEnabledModules().filter((key) => key !== "ecology_engine" && key !== "settlement_engine"),
     favoriteEntityIds: [],
     favoriteViewIds: [],
-    calendar: defaultCalendarConfig(),
+    calendar: {
+      ...defaultCalendarConfig(),
+      epochLabel: "Ciclo Terrestre",
+      currentDay: 8,
+      log: [{ id: "seed_calendar_log_1", at: now, daysAdvanced: 8, note: "Início de campanha — 8 dias de viagem até o último ponto conhecido do sinal." }],
+    },
     createdAt: now,
     updatedAt: now,
   };
@@ -348,7 +425,24 @@ export function createSecondDemoCampaign(): CampaignData {
     { key: "n_reyes", kind: "npc", title: "Capitã Reyes", x: -180, y: -180, summary: "Comanda a Horizonte há oito anos; não confia no Consórcio.", tags: ["capitã"], groupKey: "ship" },
     { key: "n_ibrahim", kind: "npc", title: "Doc Ibrahim", x: 160, y: -180, summary: "Engenheiro e médico de bordo, cético quanto ao sinal.", tags: ["engenheiro"], groupKey: "ship" },
     { key: "n_eco", kind: "npc", title: "ECO", x: 500, y: -180, summary: "IA da nave. Educada demais para ser inteiramente confiável.", important: true, groupKey: "ship" },
-    { key: "f_halcyon", kind: "faction", title: "Consórcio Halcyon", x: -180, y: 100, summary: "Dona legal dos destroços — quer a estação intacta, a qualquer custo.", groupKey: "ship" },
+    {
+      key: "f_halcyon", kind: "faction", title: "Consórcio Halcyon", x: -180, y: 100, summary: "Dona legal dos destroços — quer a estação intacta, a qualquer custo.", groupKey: "ship",
+      fields: {
+        goal: "Recuperar a Estação Kessler intacta e lucrar com os direitos de salvamento.",
+        resources: "Contratos legais, uma frota pequena, paciência política.",
+        standing: -30,
+        clocks: [{ id: "seed_clock_halcyon", label: "O Consórcio manda seu próprio time", segments: 8, filled: 3 }],
+        log: [{ id: "seed_faction_log_halcyon", at: now, note: "Pressionou a Horizonte por um relatório de status." }],
+      },
+    },
+    {
+      key: "p_torres", kind: "player", title: "Ala Torres", x: 900, y: -180, summary: "Piloto da Horizonte, ex-militar, desconfia de IAs.", tags: ["jogadora"], groupKey: "ship",
+      fields: {
+        hp: 20, maxHp: 20, level: "Veterana",
+        attributes: [{ id: "seed_attr_reflexo", label: "Reflexo", value: "+4" }, { id: "seed_attr_sangue_frio", label: "Sangue-frio", value: "+2" }],
+        conditions: [], notes: "Perdeu a última tripulação numa estação parecida com a Kessler.",
+      },
+    },
     { key: "q_signal", kind: "quest", title: "Investigar o Sinal", x: 160, y: 100, summary: "Um sinal de socorro sai da Estação Kessler há três dias.", status: "Ativa", important: true, groupKey: "ship" },
     { key: "res_oxygen", kind: "resource", title: "Oxigênio (Horizonte)", x: 500, y: 100, summary: "Reserva da nave; cai rápido em EVA prolongada.", groupKey: "ship", fields: { stock: 68, unit: "%", criticalThreshold: 20, regenNote: "Recicladores restauram 5%/dia em operação normal.", notes: "Cair abaixo de 20% cancela EVAs." } },
     { key: "msg_distress", kind: "message", title: "Sinal de socorro da Kessler", x: -180, y: 380, summary: "Transmissão em loop, sem resposta a chamadas.", groupKey: "ship", fields: { medium: "Outro", deliveryStatus: "Entregue", content: "...kessler chamando... alguém... o núcleo não...", sentDate: "3 dias antes da chegada da Horizonte" } },
@@ -360,6 +454,18 @@ export function createSecondDemoCampaign(): CampaignData {
     { key: "item_core", kind: "item", title: "Núcleo de Dados Recuperado", x: 2200, y: 100, summary: "Criptografado; o Consórcio pagaria bem por ele intacto.", groupKey: "station", fields: { price: 4000, currency: "créditos", rarity: "Raro", tradeNotes: "O Consórcio não sabe que já foi recuperado." } },
     { key: "s_core", kind: "secret", title: "O que o núcleo realmente registrou", x: 2560, y: 100, summary: "Só ECO sabe — e não contou tudo à Capitã Reyes.", groupKey: "station" },
     { key: "r_signal", kind: "rumor", title: "\"O sinal não é da tripulação da Kessler\"", x: 2200, y: 380, summary: "Comentado nos canais abertos da rota comercial.", groupKey: "station", fields: { truth: "Verdadeiro", source: "Tripulações de outras naves na rota", spreadNotes: "Ninguém leva a sério até a Horizonte chegar perto.", templateId: null }, visibility: "revealed" },
+    {
+      key: "table_wreck_finds", kind: "table", title: "Achados nos destroços", x: 2560, y: 380, summary: "O que a tripulação encontra vasculhando compartimentos selados da Kessler.", groupKey: "station",
+      fields: {
+        entries: [
+          { id: "seed_entry_1", text: "Um traje EVA ainda pressurizado, vazio.", weight: 2 },
+          { id: "seed_entry_2", text: "Registros de manutenção corrompidos.", weight: 3 },
+          { id: "seed_entry_3", text: "Uma foto de família presa a um console.", weight: 1 },
+          { id: "seed_entry_4", text: "Compartimento vazio — já foi saqueado antes.", weight: 4 },
+        ],
+        history: [],
+      },
+    },
   ];
 
   const entityIds = new Map<string, string>();
@@ -400,7 +506,45 @@ export function createSecondDemoCampaign(): CampaignData {
     updatedAt: now,
   };
   entityIds.set("rule_oxygen_critical", ruleEntity.id);
-  const entities = [...baseEntities, ruleEntity];
+
+  // Encontro de exemplo (Combat Tracker, Fase 8): um combatente hostil
+  // sem entidade própria (drone de segurança automatizado) ao lado de
+  // combatentes ligados a NPCs/jogadora já existentes.
+  const encounterEntity: Entity = {
+    id: createId("entity"),
+    campaignId: campaign.id,
+    kind: "encounter",
+    title: "Abordagem na Kessler",
+    summary: "Um drone de segurança ainda ativo reage à presença da tripulação.",
+    color: null,
+    icon: null,
+    imageSrc: null,
+    tags: [],
+    status: null,
+    fields: {
+      active: true,
+      round: 1,
+      turnIndex: 0,
+      combatants: [
+        { id: "seed_combatant_torres", entityId: entityIds.get("p_torres"), name: "Ala Torres", initiative: 18, hp: 20, maxHp: 20, conditions: [], isAlly: true },
+        { id: "seed_combatant_reyes", entityId: entityIds.get("n_reyes"), name: "Capitã Reyes", initiative: 11, hp: 16, maxHp: 16, conditions: [], isAlly: true },
+        { id: "seed_combatant_drone", entityId: null, name: "Drone sentinela", initiative: 14, hp: 12, maxHp: 12, conditions: [], isAlly: false },
+      ],
+      log: [{ id: "seed_encounter_log_1", at: now, note: "O drone desperta ao detectar movimento no convés de carga." }],
+    },
+    x: 2200,
+    y: 660,
+    width: kindConfig("encounter").width,
+    height: kindConfig("encounter").height,
+    groupId: groupIds.get("station") ?? null,
+    visibility: "gm_only",
+    important: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+  entityIds.set("encounter_kessler_boarding", encounterEntity.id);
+
+  const entities = [...baseEntities, ruleEntity, encounterEntity];
 
   const relationSeeds: Array<{ from: string; to: string; type: RelationType; label?: string }> = [
     { from: "n_reyes", to: "n_ibrahim", type: "trusts" },
