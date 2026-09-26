@@ -433,6 +433,17 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .schedule-group-heading { display: block; width: 100%; margin-bottom: 8px; padding: 8px 10px; color: #cbbcff; text-align: left; background: rgba(167,139,250,.08); border: 1px solid rgba(167,139,250,.2); border-radius: 9px; cursor: pointer; font-size: 11px; font-weight: 650; }
 .schedule-group-heading:disabled { color: #8994aa; background: rgba(255,255,255,.03); border-color: #242c3d; cursor: default; }
 
+/* Party Overview */
+.party-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.party-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; background: #0c1019; border: 1px solid #242c3d; border-radius: 10px; }
+.party-row.is-low { border-color: rgba(251,113,133,.4); background: rgba(251,113,133,.06); }
+.party-row-main { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; text-align: left; background: transparent; border: 0; cursor: pointer; }
+.party-row-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.party-row-title { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.party-hp-bar { width: 100%; margin: 0; }
+.party-row-hp { color: #8994aa; font-size: 9px; font-variant-numeric: tabular-nums; text-transform: uppercase; letter-spacing: .04em; }
+.party-row-conditions { flex-shrink: 0; max-width: 160px; overflow: hidden; color: #fda4af; font-size: 9px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+
 /* Settlements panel (World Progression) */
 .settlement-list { max-height: 480px; }
 .settlement-row { align-items: center; }

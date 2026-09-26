@@ -16,6 +16,7 @@ import { KnowledgeEnginePanel } from "./components/panels/KnowledgeEnginePanel";
 import { MessagesPanel } from "./components/panels/MessagesPanel";
 import { ModulesPanel } from "./components/panels/ModulesPanel";
 import { MysteryBoardPanel } from "./components/panels/MysteryBoardPanel";
+import { PartyPanel } from "./components/panels/PartyPanel";
 import { PlayerKnowledgeViewPanel } from "./components/panels/PlayerKnowledgeViewPanel";
 import { RulesEnginePanel } from "./components/panels/RulesEnginePanel";
 import { RumorGeneratorPanel } from "./components/panels/RumorGeneratorPanel";
@@ -192,6 +193,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
   const [tablesOpen, setTablesOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [safetyToolsOpen, setSafetyToolsOpen] = useState(false);
+  const [partyOpen, setPartyOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
   const [editing, setEditing] = useState<{ id: string; bounds: WorldBounds } | null>(null);
   const [contextMenu, setContextMenu] = useState<CanvasContextTarget | null>(null);
@@ -331,6 +333,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     { key: "tables", label: "Tabelas", icon: Icons.dice, onClick: () => setTablesOpen(true), visible: hasModule("table_engine") },
     { key: "schedule", label: "Onde estão agora", icon: Icons.compass, onClick: () => setScheduleOpen(true), visible: hasModule("schedule_engine") },
     { key: "safety-tools", label: "Limites da mesa", icon: Icons.shield, onClick: () => setSafetyToolsOpen(true), visible: hasModule("safety_tools") },
+    { key: "party", label: "Visão do grupo", icon: Icons.group, onClick: () => setPartyOpen(true), visible: hasModule("character_sheet") },
     { key: "export-image", label: "Exportar imagem PNG", icon: Icons.image, onClick: () => void exportCanvasImage(), visible: true },
     { key: "modules", label: "Módulos desta campanha", icon: Icons.toggles, onClick: () => setModulesOpen(true), visible: true },
   ];
@@ -605,6 +608,13 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
           safetyTools={state.campaign.safetyTools}
           onClose={() => setSafetyToolsOpen(false)}
           onUpdate={(partial) => store.updateSafetyTools(partial)}
+        />
+      )}
+      {partyOpen && (
+        <PartyPanel
+          entities={state.entities}
+          onClose={() => setPartyOpen(false)}
+          onFocusEntity={(id) => { store.selectEntity(id); canvasRef.current?.focusEntity(id); }}
         />
       )}
       {presentationEntity && <PresentationView entity={presentationEntity} onClose={() => setPresentationEntityId(null)} />}
