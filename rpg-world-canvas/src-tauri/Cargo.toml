@@ -1,6 +1,6 @@
 [package]
 name = "rpg-world-canvas"
-version = "0.8.0"
+version = "0.9.0"
 description = "Motor visual de campanhas de RPG de mesa — canvas local-first, um dado, várias lentes"
 authors = ["Zé Clover"]
 edition = "2021"
