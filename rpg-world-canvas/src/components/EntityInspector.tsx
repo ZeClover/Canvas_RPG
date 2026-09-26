@@ -10,6 +10,7 @@ import { Icons } from "./Icons";
 import { CharacterSection } from "./sections/CharacterSection";
 import { EcologySection } from "./sections/EcologySection";
 import { EconomySection } from "./sections/EconomySection";
+import { DowntimeSection } from "./sections/DowntimeSection";
 import { EncounterSection } from "./sections/EncounterSection";
 import { FactionSection } from "./sections/FactionSection";
 import { ForeshadowingSection } from "./sections/ForeshadowingSection";
@@ -216,6 +217,7 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
       {showKindSection && entity.kind === "encounter" && <EncounterSection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "table" && <TableSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && entity.kind === "journey" && <JourneySection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "downtime" && <DowntimeSection fields={entity.fields} allEntities={allEntities} onUpdate={(fields) => onUpdate({ fields })} />}
 
       {!isGroup && enabledModules.includes("schedule_engine") && (
         <ScheduleSection fields={entity.fields} allEntities={allEntities} currentEntityId={entity.id} onUpdate={(fields) => onUpdate({ fields })} />
