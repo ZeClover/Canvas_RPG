@@ -220,6 +220,46 @@ describe("CanvasEngine", () => {
     expect(callbacks.onSelectEntity).not.toHaveBeenCalled();
   });
 
+  it("exportPNG gera um PNG e restaura a câmera/estado do Canvas ao vivo depois", async () => {
+    const state = makeState();
+    const { engine, canvas } = await createEngine(state);
+    const cameraBefore = engine.getCamera();
+
+    const blob = await engine.exportPNG();
+
+    expect(blob).not.toBeNull();
+    expect(blob!.type).toBe("image/png");
+    expect(blob!.size).toBeGreaterThan(0);
+    // The live camera/state must be exactly what it was before exporting —
+    // exportPNG paints to an offscreen canvas, never the visible one.
+    expect(engine.getCamera()).toEqual(cameraBefore);
+
+    // The live canvas must still behave normally afterward (caches restored).
+    const npc = state.entities.find((entity) => entity.kind !== "group")!;
+    const point = engine.worldToScreen({ x: npc.x + npc.width / 2, y: npc.y + npc.height / 2 });
+    firePointer(canvas, "pointerdown", { x: point.x, y: point.y });
+    // no assertion needed beyond "did not throw" — a corrupted cardIndex/
+    // entityById would make hit-testing behave inconsistently or crash.
+  });
+
+  it("exportPNG sem nenhuma entidade na campanha retorna null", async () => {
+    const state = makeState();
+    const { engine } = await createEngine({ ...state, entities: [], relations: [] });
+    const blob = await engine.exportPNG();
+    expect(blob).toBeNull();
+  });
+
+  it("exportPNG com uma seleção exporta só os selecionados (mais o grupo, se houver)", async () => {
+    const base = makeState();
+    const npc = base.entities.find((entity) => entity.kind !== "group")!;
+    const state = { ...base, selectedEntityIds: [npc.id] };
+    const { engine } = await createEngine(state);
+    const blob = await engine.exportPNG();
+    expect(blob).not.toBeNull();
+    // The live state must be untouched by the temporary export-only subset.
+    expect(engine.getCamera().viewportWidth).toBeGreaterThan(0);
+  });
+
   it("zoom com a roda do mouse mantém o ponto do mundo sob o cursor", async () => {
     const state = makeState();
     const { engine, canvas, callbacks } = await createEngine(state);

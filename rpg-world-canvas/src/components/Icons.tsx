@@ -39,4 +39,5 @@ export const Icons = {
   pulse: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M7 12h2.5l1.5-4 2.5 8 1.5-4H17" /></IconBase>,
   mail: (props: IconProps) => <IconBase {...props}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 6.5 8 6 8-6" /></IconBase>,
   target: (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r=".8" fill="currentColor" stroke="none" /></IconBase>,
+  image: (props: IconProps) => <IconBase {...props}><rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="8.5" cy="9.5" r="1.6" /><path d="m4 17 5.5-5.5c.6-.6 1.4-.6 2 0L15 15l1-1c.6-.6 1.4-.6 2 0l2 2" /></IconBase>,
 };

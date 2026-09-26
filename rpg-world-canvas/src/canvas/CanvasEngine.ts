@@ -1162,6 +1162,79 @@ export class CanvasEngine {
     this.animateCamera(cameraForBounds(bounds, viewportWidth, viewportHeight, 120));
   }
 
+  /** Renders the current selection (or every entity in the active view, if
+   * nothing is selected) to a standalone PNG — reusing the exact same
+   * paintScene()/drawCard()/drawRelation() the live Canvas uses, just onto
+   * an offscreen canvas sized to fit the content instead of the viewport,
+   * so exported cards look identical to what's on screen. Groups are
+   * always included when any of their contents are, since a group with no
+   * frame drawn around its children would look broken. */
+  async exportPNG(): Promise<Blob | null> {
+    if (!this.state) return null;
+    const selected = this.state.selectedEntityIds;
+    const baseTargets = selected.length ? this.state.entities.filter((entity) => selected.includes(entity.id)) : this.state.entities;
+    if (!baseTargets.length) return null;
+    const groupIds = new Set(baseTargets.filter((entity) => entity.kind === "group").map((entity) => entity.id));
+    for (const entity of baseTargets) if (entity.groupId) groupIds.add(entity.groupId);
+    const targets = groupIds.size
+      ? this.state.entities.filter((entity) => baseTargets.includes(entity) || groupIds.has(entity.id))
+      : baseTargets;
+
+    const bounds = collectBounds(targets.map((entity) => this.effectiveBounds(entity)));
+    const padding = 90;
+    const exportScale = 2;
+    const maxDimension = 6000;
+    const width = Math.min(maxDimension, Math.round((bounds.width + padding * 2) * exportScale));
+    const height = Math.min(maxDimension, Math.round((bounds.height + padding * 2) * exportScale));
+    const scale = Math.min(exportScale, width / (bounds.width + padding * 2), height / (bounds.height + padding * 2));
+
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = width;
+    exportCanvas.height = height;
+    const exportCtx = exportCanvas.getContext("2d");
+    if (!exportCtx) return null;
+
+    exportCtx.fillStyle = "#090b12";
+    exportCtx.fillRect(0, 0, width, height);
+
+    // Rebuild the derived caches (cardIndex/entityById/relationsByEntityId)
+    // for just the export subset, paint, then restore every one of them —
+    // deliberately NOT calling setState()/render(), since either would
+    // flash the live visible canvas with the export camera/content for a
+    // frame before flashing back.
+    const originalState = this.state;
+    const originalCardIndex = this.cardIndex;
+    const originalEntityById = this.entityById;
+    const originalRelationsByEntityId = this.relationsByEntityId;
+    const savedCamera = this.camera;
+
+    const targetIds = new Set(targets.map((entity) => entity.id));
+    const targetRelations = originalState.relations.filter((relation) => targetIds.has(relation.fromEntityId) && targetIds.has(relation.toEntityId));
+
+    this.state = { entities: targets, relations: targetRelations, selectedEntityIds: [], selectedRelationId: null, focusSet: null };
+    this.cardIndex = new SpatialIndex<Entity>();
+    this.cardIndex.rebuild(targets.filter((entity) => entity.kind !== "group"));
+    this.entityById = new Map(targets.map((entity) => [entity.id, entity]));
+    this.relationsByEntityId = new Map();
+    for (const relation of targetRelations) {
+      this.relationsByEntityId.set(relation.fromEntityId, [...(this.relationsByEntityId.get(relation.fromEntityId) ?? []), relation]);
+      this.relationsByEntityId.set(relation.toEntityId, [...(this.relationsByEntityId.get(relation.toEntityId) ?? []), relation]);
+    }
+    this.camera = { x: -bounds.x * scale + padding * scale, y: -bounds.y * scale + padding * scale, scale, viewportWidth: width, viewportHeight: height };
+    exportCtx.setTransform(this.camera.scale, 0, 0, this.camera.scale, this.camera.x, this.camera.y);
+    try {
+      this.paintScene(exportCtx, { x: bounds.x - padding, y: bounds.y - padding, width: bounds.width + padding * 2, height: bounds.height + padding * 2 }, "detail");
+    } finally {
+      this.state = originalState;
+      this.cardIndex = originalCardIndex;
+      this.entityById = originalEntityById;
+      this.relationsByEntityId = originalRelationsByEntityId;
+      this.camera = savedCamera;
+    }
+
+    return new Promise((resolve) => exportCanvas.toBlob((blob) => resolve(blob), "image/png"));
+  }
+
   focusEntity(id: string): void {
     const entity = this.state?.entities.find((candidate) => candidate.id === id);
     if (!entity) return;

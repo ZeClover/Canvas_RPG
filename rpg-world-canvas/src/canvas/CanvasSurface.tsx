@@ -16,6 +16,7 @@ export interface CanvasSurfaceHandle {
   focusEntity: (id: string) => void;
   centerOn: (point: WorldPoint) => void;
   viewportCenter: () => WorldPoint;
+  exportPNG: () => Promise<Blob | null>;
 }
 
 interface CanvasSurfaceProps {
@@ -43,6 +44,7 @@ export const CanvasSurface = forwardRef<CanvasSurfaceHandle, CanvasSurfaceProps>
     focusEntity: (id) => engineRef.current?.focusEntity(id),
     centerOn: (point) => engineRef.current?.centerOn(point),
     viewportCenter: () => engineRef.current?.getViewportCenter() ?? { x: 0, y: 0 },
+    exportPNG: async () => (await engineRef.current?.exportPNG()) ?? null,
   }), []);
 
   const computeRenderState = useMemo(() => {

@@ -268,6 +268,20 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     await exportCampaignFile({ campaign: state.campaign, entities: state.entities, relations: state.relations, views: state.views });
   }
 
+  async function exportCanvasImage() {
+    const blob = await canvasRef.current?.exportPNG();
+    if (!blob) return;
+    const activeView = state.views.find((view) => view.id === state.activeViewId);
+    const scope = state.selectedEntityIds.length ? "selecao" : (activeView?.title ?? "canvas");
+    const clean = `${state.campaign.title}-${scope}`.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${clean || "canvas"}.png`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   const saveLabel = state.saving ? "Salvando…" : state.dirty ? "Alterações locais" : state.lastSavedAt ? "Salvo agora" : "Salvo localmente";
   const editEntity = editing ? state.entities.find((entity) => entity.id === editing.id) : null;
 
@@ -286,6 +300,7 @@ function Workspace({ store, onBack }: { store: CampaignStore; onBack: () => void
     { key: "campaign-health", label: "Saúde da campanha", icon: Icons.pulse, onClick: () => setCampaignHealthOpen(true), visible: hasModule("campaign_health") },
     { key: "player-view", label: "O que os jogadores sabem", icon: Icons.eye, onClick: () => setPlayerViewOpen(true), visible: hasModule("player_knowledge_view") },
     { key: "messages", label: "Cartas & mensageiros", icon: Icons.mail, onClick: () => setMessagesOpen(true), visible: hasModule("world_communication") },
+    { key: "export-image", label: "Exportar imagem PNG", icon: Icons.image, onClick: () => void exportCanvasImage(), visible: true },
     { key: "modules", label: "Módulos desta campanha", icon: Icons.toggles, onClick: () => setModulesOpen(true), visible: true },
   ];
   const tools: ToolMenuItem[] = allTools.filter((tool) => tool.visible);

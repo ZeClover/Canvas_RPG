@@ -43,6 +43,13 @@ if (typeof HTMLCanvasElement !== "undefined") {
     if (type === "2d") return makeContext2DStub();
     return null;
   } as typeof HTMLCanvasElement.prototype.getContext;
+
+  // jsdom has no real canvas backing, so toBlob() normally just logs
+  // "Not implemented" and never calls back — this is enough to test that
+  // callers of exportPNG() get a real Blob without a browser.
+  HTMLCanvasElement.prototype.toBlob = function toBlob(callback: BlobCallback, type = "image/png") {
+    callback(new Blob(["stub-image-bytes"], { type }));
+  };
 }
 
 export class MockResizeObserver {
