@@ -365,6 +365,11 @@ kbd { padding: 3px 6px; color: #748098; background: #171c29; border: 1px solid #
 .encounter-row-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
 .encounter-linked { overflow: hidden; color: #657088; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Character Sheet */
+.character-attribute-list li { gap: 6px; }
+.character-attribute-label { flex: 1.2; min-width: 0; height: 26px; padding: 0 7px; color: #dce1ed; background: transparent; border: 1px solid #242c3d; border-radius: 6px; font-size: 10px; }
+.character-attribute-value { flex: 1; min-width: 0; height: 26px; padding: 0 7px; color: #dce1ed; background: transparent; border: 1px solid #242c3d; border-radius: 6px; font-size: 10px; }
+
 /* Settlements panel (World Progression) */
 .settlement-list { max-height: 480px; }
 .settlement-row { align-items: center; }

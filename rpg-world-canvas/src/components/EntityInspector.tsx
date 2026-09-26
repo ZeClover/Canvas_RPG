@@ -7,6 +7,7 @@ import type { Entity, EntityKind, Relation, RelationType, Visibility } from "../
 import { RELATION_TYPES } from "../domain/types";
 import { ColorPicker } from "./ColorPicker";
 import { Icons } from "./Icons";
+import { CharacterSection } from "./sections/CharacterSection";
 import { EcologySection } from "./sections/EcologySection";
 import { EconomySection } from "./sections/EconomySection";
 import { EncounterSection } from "./sections/EncounterSection";
@@ -184,6 +185,7 @@ export function EntityInspector({ entity, allEntities, relations, enabledModules
       )}
 
       {showKindSection && entity.kind === "npc" && <NpcSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
+      {showKindSection && entity.kind === "player" && <CharacterSection fields={entity.fields} onUpdate={(fields) => onUpdate({ fields })} />}
       {showKindSection && (entity.kind === "quest" || entity.kind === "side_quest") && (
         <QuestSection status={entity.status} fields={entity.fields} onUpdateStatus={(value) => onUpdate({ status: value })} onUpdate={(fields) => onUpdate({ fields })} />
       )}
