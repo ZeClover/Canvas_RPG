@@ -3,6 +3,7 @@ import { kindConfig } from "../domain/entityKindRegistry";
 import { readEventFields } from "../domain/eventFields";
 import { readSessionFields } from "../domain/sessionFields";
 import type { Entity } from "../domain/types";
+import { useEscapeToClose } from "../hooks/useEscapeToClose";
 import { Icons } from "./Icons";
 
 interface TimelinePanelProps {
@@ -18,6 +19,7 @@ interface TimelineRow {
 }
 
 export function TimelinePanel({ entities, onClose, onFocusEntity }: TimelinePanelProps) {
+  useEscapeToClose(onClose);
   const [showEvents, setShowEvents] = useState(true);
   const [showSessions, setShowSessions] = useState(true);
   const [search, setSearch] = useState("");

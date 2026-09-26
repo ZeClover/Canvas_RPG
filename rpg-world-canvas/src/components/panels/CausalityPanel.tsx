@@ -3,6 +3,7 @@ import { kindConfig } from "../../domain/entityKindRegistry";
 import { causalChain, type CausalNode } from "../../domain/graph";
 import { relationConfig } from "../../domain/relationTypeRegistry";
 import type { Entity, Relation } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface CausalityPanelProps {
@@ -41,6 +42,7 @@ function CausalTree({ nodes, onSelect }: { nodes: CausalNode[]; onSelect: (id: s
  * inferred — a chain only exists here because the GM already connected it
  * on the Canvas. */
 export function CausalityPanel({ entities, relations, onClose, onFocusEntity }: CausalityPanelProps) {
+  useEscapeToClose(onClose);
   const entityById = useMemo(() => new Map(entities.map((entity) => [entity.id, entity])), [entities]);
   const [focusId, setFocusId] = useState("");
 

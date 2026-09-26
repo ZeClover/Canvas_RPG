@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatCalendarDate, type CalendarConfig, type CalendarMonth } from "../../domain/calendarFields";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface CalendarPanelProps {
@@ -10,6 +11,7 @@ interface CalendarPanelProps {
 }
 
 export function CalendarPanel({ calendar, onClose, onAdvance, onUpdateConfig }: CalendarPanelProps) {
+  useEscapeToClose(onClose);
   const [advanceDays, setAdvanceDays] = useState(1);
   const [advanceNote, setAdvanceNote] = useState("");
   const [newMonthName, setNewMonthName] = useState("");

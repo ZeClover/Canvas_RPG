@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { readTableFields, rollTable } from "../../domain/tableFields";
 import type { Entity } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface TablesPanelProps {
@@ -14,6 +15,7 @@ interface TablesPanelProps {
  * for its card or opening the inspector — built for the moment mid-session
  * where the GM needs a name/loot/rumor right now. */
 export function TablesPanel({ entities, onClose, onFocusEntity, onRecordRoll }: TablesPanelProps) {
+  useEscapeToClose(onClose);
   const tables = entities.filter((entity) => entity.kind === "table").sort((a, b) => a.title.localeCompare(b.title));
   const [lastResults, setLastResults] = useState<Record<string, string>>({});
 

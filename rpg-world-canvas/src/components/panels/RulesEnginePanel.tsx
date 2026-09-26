@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { readRuleFields, RULE_ACTION_LABEL } from "../../domain/ruleFields";
 import type { Entity } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface RulesEnginePanelProps {
@@ -16,6 +17,7 @@ interface RulesEnginePanelProps {
  * like any other card — this panel is the at-a-glance list plus a quick
  * enable/disable toggle and firing history, mirroring the Timeline. */
 export function RulesEnginePanel({ entities, onClose, onFocusEntity, onToggleEnabled, onCreateRule }: RulesEnginePanelProps) {
+  useEscapeToClose(onClose);
   const entityById = useMemo(() => new Map(entities.map((entity) => [entity.id, entity])), [entities]);
   const rules = useMemo(() => entities.filter((entity) => entity.kind === "rule").sort((a, b) => a.title.localeCompare(b.title)), [entities]);
 

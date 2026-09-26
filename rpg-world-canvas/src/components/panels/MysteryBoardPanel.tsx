@@ -3,6 +3,7 @@ import { kindConfig } from "../../domain/entityKindRegistry";
 import { bfsFrom, buildAdjacency, degreeCounts, orphanEntities } from "../../domain/graph";
 import { relationConfig } from "../../domain/relationTypeRegistry";
 import type { Entity, EntityKind, Relation } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface MysteryBoardPanelProps {
@@ -19,6 +20,7 @@ const MYSTERY_KINDS: EntityKind[] = ["secret", "clue", "rumor"];
  * drew: who's most connected, what's still a loose thread, and what sits
  * within N hops of a chosen focus. */
 export function MysteryBoardPanel({ entities, relations, onClose, onFocusEntity }: MysteryBoardPanelProps) {
+  useEscapeToClose(onClose);
   const entityById = useMemo(() => new Map(entities.map((entity) => [entity.id, entity])), [entities]);
   const [focusId, setFocusId] = useState("");
   const [depth, setDepth] = useState(2);

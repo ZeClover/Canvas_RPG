@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { readEconomyFields } from "../../domain/economyFields";
 import { isResourceCritical, readResourceFields } from "../../domain/resourceFields";
 import type { Entity } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface EconomyResourcesPanelProps {
@@ -22,6 +23,7 @@ interface EconomyResourcesPanelProps {
  * menu. Nothing here is simulated: prices and stock only change when
  * someone edits the item/resource card. */
 export function EconomyResourcesPanel({ entities, showItems, showResources, onClose, onFocusEntity }: EconomyResourcesPanelProps) {
+  useEscapeToClose(onClose);
   const items = useMemo(
     () => entities
       .filter((entity) => entity.kind === "item")

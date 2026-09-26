@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { kindConfig } from "../../domain/entityKindRegistry";
 import { readMessageFields } from "../../domain/messageFields";
 import type { Entity, Relation } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface MessagesPanelProps {
@@ -18,6 +19,7 @@ const AT_RISK_STATUSES = new Set(["Interceptada", "Perdida"]);
  * straight from the relation graph (originated_from/addressed_to), never
  * duplicated here. */
 export function MessagesPanel({ entities, relations, onClose, onFocusEntity }: MessagesPanelProps) {
+  useEscapeToClose(onClose);
   const entityById = useMemo(() => new Map(entities.map((entity) => [entity.id, entity])), [entities]);
 
   const rows = useMemo(() => {

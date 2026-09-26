@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { readSettlementFields } from "../../domain/settlementFields";
 import type { Entity } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface SettlementsPanelProps {
@@ -15,6 +16,7 @@ type SortKey = "prosperity" | "stability";
  * city's growth, never simulated — each number and log entry here is
  * something the GM typed in after a session. */
 export function SettlementsPanel({ entities, onClose, onFocusEntity }: SettlementsPanelProps) {
+  useEscapeToClose(onClose);
   const [sortKey, setSortKey] = useState<SortKey>("prosperity");
 
   const rows = useMemo(() => {

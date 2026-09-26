@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { MODULE_REGISTRY, type ModuleKey } from "../../domain/modules";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface ModulesPanelProps {
@@ -24,6 +25,7 @@ const PHASE_LABEL: Record<number, string> = {
  * for that kind stays exactly as it was, just not shown until turned back
  * on (see domain/modules.ts). */
 export function ModulesPanel({ enabledModules, onClose, onChange }: ModulesPanelProps) {
+  useEscapeToClose(onClose);
   const enabled = useMemo(() => new Set(enabledModules), [enabledModules]);
   const groups = useMemo(() => {
     const byPhase = new Map<number, typeof MODULE_REGISTRY>();

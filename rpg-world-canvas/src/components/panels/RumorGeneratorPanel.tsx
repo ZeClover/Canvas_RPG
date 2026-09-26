@@ -3,6 +3,7 @@ import { kindConfig } from "../../domain/entityKindRegistry";
 import { renderTemplate, RUMOR_TEMPLATES, templateIsComplete, type TemplateSegment } from "../../domain/rumorTemplates";
 import { RUMOR_TRUTH_STATES, type RumorTruthState } from "../../domain/rumorFields";
 import type { Entity, EntityKind } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface RumorGeneratorPanelProps {
@@ -17,6 +18,7 @@ interface RumorGeneratorPanelProps {
  * the same store.createEntity("rumor", ...) any other card uses; this
  * panel just assembles the summary text for you first. */
 export function RumorGeneratorPanel({ entities, onClose, onCreateRumor }: RumorGeneratorPanelProps) {
+  useEscapeToClose(onClose);
   const [templateId, setTemplateId] = useState(RUMOR_TEMPLATES[0].id);
   const [values, setValues] = useState<Record<string, string>>({});
   const [truth, setTruth] = useState<RumorTruthState>("Desconhecido");

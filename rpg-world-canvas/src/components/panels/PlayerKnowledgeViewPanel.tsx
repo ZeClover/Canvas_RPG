@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { kindConfig } from "../../domain/entityKindRegistry";
 import type { Entity } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface PlayerKnowledgeViewPanelProps {
@@ -16,6 +17,7 @@ interface PlayerKnowledgeViewPanelProps {
  * card. "Partial" entities show only that they exist, not their details;
  * "gm_only" ones don't appear here at all. */
 export function PlayerKnowledgeViewPanel({ entities, onClose, onFocusEntity }: PlayerKnowledgeViewPanelProps) {
+  useEscapeToClose(onClose);
   const [search, setSearch] = useState("");
 
   const rows = useMemo(() => {

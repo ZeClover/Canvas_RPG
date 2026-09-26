@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { kindConfig } from "../../domain/entityKindRegistry";
 import { relationConfig } from "../../domain/relationTypeRegistry";
 import type { Entity, EntityKind, Relation } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface KnowledgeEnginePanelProps {
@@ -18,6 +19,7 @@ const KNOWLEDGE_KINDS: EntityKind[] = ["secret", "knowledge", "clue", "rumor"];
  * originated_from...). Pick a secret/clue/rumor/knowledge on the left, see
  * everything connected to it on the right, deterministically. */
 export function KnowledgeEnginePanel({ entities, relations, onClose, onFocusEntity }: KnowledgeEnginePanelProps) {
+  useEscapeToClose(onClose);
   const [search, setSearch] = useState("");
   const [onlyUnknown, setOnlyUnknown] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);

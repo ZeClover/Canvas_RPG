@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { createId } from "../../domain/id";
 import type { Campaign, UniverseLink } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface MultiverseLinksPanelProps {
@@ -17,6 +18,7 @@ interface MultiverseLinksPanelProps {
  * shared cosmology, a "these are the same world at different eras"); it
  * never merges data between campaigns or creates cross-campaign entities. */
 export function MultiverseLinksPanel({ campaigns, links, onClose, onCreateLink, onDeleteLink }: MultiverseLinksPanelProps) {
+  useEscapeToClose(onClose);
   const campaignById = useMemo(() => new Map(campaigns.map((campaign) => [campaign.id, campaign])), [campaigns]);
   const [fromId, setFromId] = useState(campaigns[0]?.id ?? "");
   const [toId, setToId] = useState(campaigns[1]?.id ?? campaigns[0]?.id ?? "");

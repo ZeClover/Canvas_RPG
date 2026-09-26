@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { kindConfig } from "../../domain/entityKindRegistry";
 import { readScheduleFields } from "../../domain/scheduleFields";
 import type { Entity } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface SchedulePanelProps {
@@ -19,6 +20,7 @@ interface LocationGroup {
  * (see scheduleFields.ts) and regroups them by location — no separate
  * store, so it can never drift from what's set on each card. */
 export function SchedulePanel({ entities, onClose, onFocusEntity }: SchedulePanelProps) {
+  useEscapeToClose(onClose);
   const entityById = useMemo(() => new Map(entities.map((e) => [e.id, e])), [entities]);
 
   const groups = useMemo(() => {

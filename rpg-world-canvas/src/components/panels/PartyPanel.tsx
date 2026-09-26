@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { readCharacterFields } from "../../domain/characterFields";
 import type { Entity } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface PartyPanelProps {
@@ -13,6 +14,7 @@ interface PartyPanelProps {
  * instead of opening each card — built for the moment mid-combat where the
  * GM needs to see who's hurt. Most-wounded (lowest hp%) floats to the top. */
 export function PartyPanel({ entities, onClose, onFocusEntity }: PartyPanelProps) {
+  useEscapeToClose(onClose);
   const rows = useMemo(() => {
     return entities
       .filter((entity) => entity.kind === "player")

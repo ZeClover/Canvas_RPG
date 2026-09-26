@@ -5,6 +5,7 @@ import { createId } from "../domain/id";
 import { defaultSafetyToolsConfig } from "../domain/safetyToolsFields";
 import { defaultEnabledModules } from "../domain/modules";
 import type { Campaign, UniverseLink } from "../domain/types";
+import { useEscapeToClose } from "../hooks/useEscapeToClose";
 import { Icons } from "./Icons";
 import { MultiverseLinksPanel } from "./panels/MultiverseLinksPanel";
 
@@ -31,6 +32,8 @@ export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, o
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  useEscapeToClose(() => setCreating(false), creating);
+  useEscapeToClose(() => setBackupsOpen(false), backupsOpen);
 
   async function importCampaign(file?: File) {
     setBusy(true);

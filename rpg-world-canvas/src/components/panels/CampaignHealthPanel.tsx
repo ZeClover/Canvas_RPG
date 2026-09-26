@@ -5,6 +5,7 @@ import { orphanEntities } from "../../domain/graph";
 import { isResourceCritical, readResourceFields } from "../../domain/resourceFields";
 import { readRuleFields } from "../../domain/ruleFields";
 import type { Entity, EntityKind, Relation } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface CampaignHealthPanelProps {
@@ -27,6 +28,7 @@ interface Signal {
  * (critical resources, disabled rules, orphan clues...) collected into
  * one screen instead of making the GM open five panels. */
 export function CampaignHealthPanel({ entities, relations, onClose, onFocusEntity }: CampaignHealthPanelProps) {
+  useEscapeToClose(onClose);
   const [expanded, setExpanded] = useState<string | null>(null);
   const cardEntities = useMemo(() => entities.filter((entity) => entity.kind !== "group"), [entities]);
 

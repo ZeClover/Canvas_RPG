@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createId } from "../../domain/id";
 import type { SafetyToolsConfig } from "../../domain/safetyToolsFields";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface SafetyToolsPanelProps {
@@ -39,6 +40,7 @@ function ListField({ label, placeholder, value, onChange }: { label: string; pla
  * the app — this is just a place to write them down and log how something
  * got handled. Campaign-level, same shape as the Calendar. */
 export function SafetyToolsPanel({ safetyTools, onClose, onUpdate }: SafetyToolsPanelProps) {
+  useEscapeToClose(onClose);
   const [logNote, setLogNote] = useState("");
 
   return (

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { currentCombatant, readEncounterFields } from "../../domain/encounterFields";
 import type { Entity } from "../../domain/types";
+import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { Icons } from "../Icons";
 
 interface EncountersPanelProps {
@@ -12,6 +13,7 @@ interface EncountersPanelProps {
 /** Combat Tracker: quick jump to any encounter without hunting for its card
  * on the canvas — active fights float to the top. */
 export function EncountersPanel({ entities, onClose, onFocusEntity }: EncountersPanelProps) {
+  useEscapeToClose(onClose);
   const rows = useMemo(() => {
     return entities
       .filter((entity) => entity.kind === "encounter")
