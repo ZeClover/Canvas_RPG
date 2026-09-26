@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createDemoCampaign } from "../data/seed";
+import { saveCampaignDiff } from "../data/repository";
 import { CampaignStore } from "./campaignStore";
 
 vi.mock("../data/repository", () => ({ saveCampaignDiff: vi.fn().mockResolvedValue(undefined) }));
@@ -205,5 +206,39 @@ describe("CampaignStore", () => {
     store.undo(); // não deve afetar o toggle de módulos, que não passa por commit()
     expect(store.getSnapshot().campaign.enabledModules).toEqual(["npc_brain"]);
     expect(store.getSnapshot().entities.length).toBe(before);
+  });
+
+  it("uma segunda edição na mesma entidade durante um autosave em andamento não se perde", async () => {
+    // Regression test: saveNow() used to blindly clear an id's dirty flag
+    // once its snapshot-at-save-start value finished writing, even if a
+    // *newer* edit to that same id had landed while the write was still in
+    // flight — silently dropping that newer edit from ever being persisted
+    // (dirty settled back to false without it ever reaching IndexedDB).
+    const store = new CampaignStore(createDemoCampaign());
+    const npc = store.getSnapshot().entities.find((entity) => entity.kind === "npc")!;
+    const mocked = vi.mocked(saveCampaignDiff);
+
+    let resolveFirstSave: (() => void) | null = null;
+    let firstDiff: Parameters<typeof saveCampaignDiff>[0] | null = null;
+    mocked.mockImplementationOnce((diff) => {
+      firstDiff = diff;
+      return new Promise((resolve) => { resolveFirstSave = () => resolve(undefined); });
+    });
+
+    store.updateEntity(npc.id, { title: "V1" });
+    const firstSave = store.saveNow();
+    store.updateEntity(npc.id, { title: "V2" }); // lands while the first save is still in flight
+    resolveFirstSave!();
+    await firstSave;
+
+    expect(firstDiff!.upsertEntities.find((entity) => entity.id === npc.id)?.title).toBe("V1");
+    expect(store.getSnapshot().dirty).toBe(true); // V2 must still be considered unsaved
+
+    let secondDiff: Parameters<typeof saveCampaignDiff>[0] | null = null;
+    mocked.mockImplementationOnce((diff) => { secondDiff = diff; return Promise.resolve(undefined); });
+    await store.saveNow();
+
+    expect(secondDiff!.upsertEntities.find((entity) => entity.id === npc.id)?.title).toBe("V2");
+    expect(store.getSnapshot().dirty).toBe(false);
   });
 });

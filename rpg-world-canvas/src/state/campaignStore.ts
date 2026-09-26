@@ -177,6 +177,18 @@ export class CampaignStore {
     const upsertViewIds = [...this.dirtyViewIds];
     const deleteViewIds = [...this.deletedViewIds];
 
+    // Object-identity snapshot of exactly what we're about to persist for
+    // each dirty id. A commit() always replaces an edited row with a new
+    // object, so if a *second* edit lands on the same id while this save's
+    // await is still in flight, the live entity will no longer be the same
+    // reference once we get here — that's how the cleanup below tells "this
+    // id's saved value is still current" from "a newer edit is waiting and
+    // must not have its dirty flag cleared", which would otherwise drop
+    // that second edit on the floor forever (see the regression test).
+    const savedEntityRefs = new Map(upsertEntityIds.map((id) => [id, entityById.get(id)]));
+    const savedRelationRefs = new Map(upsertRelationIds.map((id) => [id, relationById.get(id)]));
+    const savedViewRefs = new Map(upsertViewIds.map((id) => [id, viewById.get(id)]));
+
     const diff: CampaignSaveDiff = {
       campaign: { ...this.state.campaign, updatedAt: Date.now() },
       upsertEntities: upsertEntityIds.map((id) => entityById.get(id)).filter((entity): entity is Entity => Boolean(entity)),
@@ -189,11 +201,14 @@ export class CampaignStore {
 
     try {
       await saveCampaignDiff(diff);
-      for (const id of upsertEntityIds) this.dirtyEntityIds.delete(id);
+      const latestEntityById = new Map(this.state.entities.map((entity) => [entity.id, entity]));
+      const latestRelationById = new Map(this.state.relations.map((relation) => [relation.id, relation]));
+      const latestViewById = new Map(this.state.views.map((view) => [view.id, view]));
+      for (const id of upsertEntityIds) if (latestEntityById.get(id) === savedEntityRefs.get(id)) this.dirtyEntityIds.delete(id);
       for (const id of deleteEntityIds) this.deletedEntityIds.delete(id);
-      for (const id of upsertRelationIds) this.dirtyRelationIds.delete(id);
+      for (const id of upsertRelationIds) if (latestRelationById.get(id) === savedRelationRefs.get(id)) this.dirtyRelationIds.delete(id);
       for (const id of deleteRelationIds) this.deletedRelationIds.delete(id);
-      for (const id of upsertViewIds) this.dirtyViewIds.delete(id);
+      for (const id of upsertViewIds) if (latestViewById.get(id) === savedViewRefs.get(id)) this.dirtyViewIds.delete(id);
       for (const id of deleteViewIds) this.deletedViewIds.delete(id);
 
       const stillDirty =
