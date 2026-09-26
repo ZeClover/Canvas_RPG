@@ -172,18 +172,34 @@ export async function listBackups(campaignId?: string): Promise<BackupInfo[]> {
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
+/** A real restore, not just an upsert: anything created/changed after the
+ * backup was taken (a new entity, a relation, a view) is still sitting in
+ * IndexedDB under this campaign's id and must be deleted, or it silently
+ * comes back the next time the campaign is opened — the in-memory store
+ * built from `data` would look correctly restored for the rest of this
+ * session, while the persisted rows underneath it quietly weren't. */
 export async function restoreBackup(backupId: string): Promise<CampaignData> {
   const backup = await dbGet<{ archive: string }>(STORES.backups, backupId);
   if (!backup) throw new Error("O backup não está mais disponível.");
   const { data } = parseCampaignArchive(backup.archive);
+
+  const [currentEntities, currentRelations, currentViews] = await Promise.all([
+    dbGetAllByIndex<Entity>(STORES.entities, "campaignId", data.campaign.id),
+    dbGetAllByIndex<Relation>(STORES.relations, "campaignId", data.campaign.id),
+    dbGetAllByIndex<View>(STORES.views, "campaignId", data.campaign.id),
+  ]);
+  const keepEntityIds = new Set(data.entities.map((entity) => entity.id));
+  const keepRelationIds = new Set(data.relations.map((relation) => relation.id));
+  const keepViewIds = new Set(data.views.map((view) => view.id));
+
   await saveCampaignDiff({
     campaign: data.campaign,
     upsertEntities: data.entities,
-    deleteEntityIds: [],
+    deleteEntityIds: currentEntities.filter((entity) => !keepEntityIds.has(entity.id)).map((entity) => entity.id),
     upsertRelations: data.relations,
-    deleteRelationIds: [],
+    deleteRelationIds: currentRelations.filter((relation) => !keepRelationIds.has(relation.id)).map((relation) => relation.id),
     upsertViews: data.views,
-    deleteViewIds: [],
+    deleteViewIds: currentViews.filter((view) => !keepViewIds.has(view.id)).map((view) => view.id),
   });
   return data;
 }

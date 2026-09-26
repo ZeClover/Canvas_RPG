@@ -90,6 +90,41 @@ describe("repository (IndexedDB real)", () => {
     expect((await loadCampaignData(demo.campaign.id)).entities.length).toBe(demo.entities.length);
   });
 
+  it("restaurar um backup também remove o que foi criado depois dele (não é só um upsert)", async () => {
+    const demo = createDemoCampaign();
+    await seedCampaign(demo);
+    await saveManualBackup(demo);
+    const latest = (await listBackups(demo.campaign.id)).find((backup) => backup.latest)!;
+
+    // Create a new entity and a new relation AFTER the backup was taken.
+    // Deliberately never call loadCampaignData() here before restoring —
+    // that has the side effect of re-snapshotting "latest" to whatever is
+    // currently there, which is a real behavior (see the test above) but
+    // not what happens in the app mid-session: the in-memory store stays
+    // synced via autosave diffs alone, without ever re-reading through
+    // loadCampaignData until the campaign is closed and reopened.
+    const newEntity = { ...demo.entities[0], id: "entity_created_after_backup", title: "Criado depois do backup" };
+    const newRelation = { ...demo.relations[0], id: "relation_created_after_backup" };
+    await saveCampaignDiff({
+      campaign: demo.campaign,
+      upsertEntities: [newEntity],
+      deleteEntityIds: [],
+      upsertRelations: [newRelation],
+      deleteRelationIds: [],
+      upsertViews: [],
+      deleteViewIds: [],
+    });
+
+    await restoreBackup(latest.id);
+
+    // Reload straight from IndexedDB (not the in-memory return value of
+    // restoreBackup) — this is the part that silently kept the extra row.
+    const reloaded = await loadCampaignData(demo.campaign.id);
+    expect(reloaded.entities.length).toBe(demo.entities.length);
+    expect(reloaded.entities.some((entity) => entity.id === newEntity.id)).toBe(false);
+    expect(reloaded.relations.some((relation) => relation.id === newRelation.id)).toBe(false);
+  });
+
   it("cria, lista e remove uma ligação do Multiverse Engine entre duas campanhas", async () => {
     const demoA = createDemoCampaign();
     const demoB = createDemoCampaign();
