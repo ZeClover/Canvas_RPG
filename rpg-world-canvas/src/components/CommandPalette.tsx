@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { kindConfig } from "../domain/entityKindRegistry";
+import { highlightSegments, searchEntities, type MatchField } from "../domain/search";
 import type { Entity } from "../domain/types";
 
 interface CommandPaletteProps {
@@ -8,27 +9,17 @@ interface CommandPaletteProps {
   onChoose: (entity: Entity) => void;
 }
 
-function normalize(value: string): string {
-  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const FIELD_LABEL: Record<MatchField, string> = { title: "", tag: "por etiqueta", summary: "por resumo", kind: "por tipo" };
+
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  const segments = highlightSegments(text, query);
+  return <>{segments.map((segment, index) => segment.matched ? <mark key={index}>{segment.text}</mark> : <span key={index}>{segment.text}</span>)}</>;
 }
 
 export function CommandPalette({ entities, onClose, onChoose }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
 
-  const results = useMemo(() => {
-    const q = normalize(query.trim());
-    const scored = entities.map((entity) => {
-      const haystack = normalize(`${entity.title} ${entity.summary} ${entity.tags.join(" ")}`);
-      const titleMatch = normalize(entity.title).includes(q);
-      const match = !q || haystack.includes(q);
-      return { entity, match, rank: titleMatch ? 0 : 1 };
-    });
-    return scored
-      .filter((item) => item.match)
-      .sort((a, b) => a.rank - b.rank || a.entity.title.localeCompare(b.entity.title))
-      .slice(0, 60)
-      .map((item) => item.entity);
-  }, [entities, query]);
+  const results = useMemo(() => searchEntities(entities, query), [entities, query]);
 
   return (
     <div className="dialog-backdrop search-backdrop" onMouseDown={onClose}>
@@ -41,16 +32,18 @@ export function CommandPalette({ entities, onClose, onChoose }: CommandPalettePr
           placeholder="Buscar NPCs, quests, locais, segredos…"
           onKeyDown={(event) => {
             if (event.key === "Escape") onClose();
-            if (event.key === "Enter" && results[0]) onChoose(results[0]);
+            if (event.key === "Enter" && results[0]) onChoose(results[0].entity);
           }}
         />
         <ul className="search-results">
-          {results.map((entity) => (
+          {results.map(({ entity, field }) => (
             <li key={entity.id}>
               <button type="button" onClick={() => onChoose(entity)}>
                 <span className="search-icon">{entity.icon ?? kindConfig(entity.kind).icon}</span>
-                <span className="search-title">{entity.title || "Sem título"}</span>
-                <span className="search-kind">{kindConfig(entity.kind).label}</span>
+                <span className="search-title">
+                  <HighlightedText text={entity.title || "Sem título"} query={field === "title" ? query : ""} />
+                </span>
+                <span className="search-kind">{kindConfig(entity.kind).label}{field !== "title" && FIELD_LABEL[field] ? ` · ${FIELD_LABEL[field]}` : ""}</span>
               </button>
             </li>
           ))}
