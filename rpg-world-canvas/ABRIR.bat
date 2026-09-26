@@ -1,6 +1,6 @@
 @echo off
 setlocal
-title RPG World Canvas v0.10.0
+title RPG World Canvas v0.11.0
 cd /d "%~dp0"
 
 set EXE=%cd%\src-tauri\target\release\RPG World Canvas.exe

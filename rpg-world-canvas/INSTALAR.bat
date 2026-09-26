@@ -1,6 +1,6 @@
 @echo off
 setlocal
-title Instalar RPG World Canvas v0.10.0
+title Instalar RPG World Canvas v0.11.0
 cd /d "%~dp0"
 
 echo ===============================================================
