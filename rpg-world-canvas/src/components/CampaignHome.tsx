@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { BackupInfo } from "../data/repository";
 import { defaultCalendarConfig } from "../domain/calendarFields";
 import { createId } from "../domain/id";
+import { defaultSafetyToolsConfig } from "../domain/safetyToolsFields";
 import { defaultEnabledModules } from "../domain/modules";
 import type { Campaign, UniverseLink } from "../domain/types";
 import { Icons } from "./Icons";
@@ -71,6 +72,7 @@ export function CampaignHome({ campaigns, onOpen, onCreate, onImport, backups, o
       favoriteEntityIds: [],
       favoriteViewIds: [],
       calendar: defaultCalendarConfig(),
+      safetyTools: defaultSafetyToolsConfig(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });

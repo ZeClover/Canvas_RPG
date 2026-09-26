@@ -1,6 +1,7 @@
 import { readCalendarConfig } from "../domain/calendarFields";
 import { createId } from "../domain/id";
 import { defaultEnabledModules, isModuleKey, type ModuleKey } from "../domain/modules";
+import { readSafetyToolsConfig } from "../domain/safetyToolsFields";
 import { ENTITY_KINDS } from "../domain/types";
 import type {
   Campaign,
@@ -212,6 +213,7 @@ function parseCampaign(value: unknown): Campaign {
     favoriteEntityIds: parseStringIdList(source.favoriteEntityIds),
     favoriteViewIds: parseStringIdList(source.favoriteViewIds),
     calendar: readCalendarConfig(source.calendar),
+    safetyTools: readSafetyToolsConfig(source.safetyTools),
     createdAt: number(source.createdAt, "Criação da campanha", 0, Number.MAX_SAFE_INTEGER),
     updatedAt: number(source.updatedAt, "Atualização da campanha", 0, Number.MAX_SAFE_INTEGER),
   };

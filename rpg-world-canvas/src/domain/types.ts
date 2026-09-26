@@ -8,6 +8,7 @@
 
 import type { CalendarConfig } from "./calendarFields";
 import type { ModuleKey } from "./modules";
+import type { SafetyToolsConfig } from "./safetyToolsFields";
 
 export type EntityKind =
   | "npc"
@@ -59,6 +60,10 @@ export type EntityKind =
   // existing locations. Distance/days/supply are GM-authored notes, never
   // simulated — see domain/journeyFields.ts.
   | "journey"
+  // Downtime Engine: a between-session activity a character commits days
+  // toward (crafting, training, research). Progress is GM-tracked, never
+  // simulated — see domain/downtimeFields.ts.
+  | "downtime"
   // Structural kind: a resizable/draggable area on the canvas that other
   // entities can belong to (via their groupId). Rendered as a bounded
   // region, not a card — everything else about it (tags, search, views,
@@ -70,7 +75,7 @@ export const ENTITY_KINDS: EntityKind[] = [
   "location", "city", "region", "faction", "creature", "item",
   "secret", "knowledge", "clue", "rumor", "decision", "possibility",
   "scene", "project", "resource", "theme", "foreshadowing",
-  "transcript", "universe", "rule", "message", "encounter", "table", "journey", "group",
+  "transcript", "universe", "rule", "message", "encounter", "table", "journey", "downtime", "group",
 ];
 
 export type Visibility = "gm_only" | "revealed" | "partial";
@@ -180,6 +185,9 @@ export interface Campaign {
   /** Calendar Engine (Fase 8): a custom in-fiction calendar and clock the
    * GM advances by hand — see domain/calendarFields.ts. */
   calendar: CalendarConfig;
+  /** Safety Tools (Fase 10): lines & veils agreed for the table, plus a
+   * log of how something got handled — see domain/safetyToolsFields.ts. */
+  safetyTools: SafetyToolsConfig;
   createdAt: number;
   updatedAt: number;
 }

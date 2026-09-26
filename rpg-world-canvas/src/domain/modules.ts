@@ -21,7 +21,7 @@ export type ModuleKey =
   | "transcript_engine" | "campaign_health" | "player_knowledge_view"
   | "world_communication" | "combat_tracker" | "character_sheet"
   | "faction_engine" | "calendar_engine" | "table_engine" | "travel_engine"
-  | "presentation_mode" | "schedule_engine";
+  | "presentation_mode" | "schedule_engine" | "safety_tools" | "downtime_engine";
 
 export interface ModuleConfig {
   key: ModuleKey;
@@ -59,6 +59,8 @@ export const MODULE_REGISTRY: ModuleConfig[] = [
   { key: "travel_engine", label: "Travel & Journey Engine", description: "Trechos de viagem entre locais, com distância, dias e progresso — planejado pelo mestre, nunca simulado.", phase: 9 },
   { key: "presentation_mode", label: "Modo Apresentação", description: "Botão \"Mostrar aos jogadores\" abre qualquer elemento em tela cheia, respeitando a visibilidade já definida.", phase: 9 },
   { key: "schedule_engine", label: "Agenda", description: "Onde alguém ou algo está em cada período — funciona em qualquer elemento, com painel \"Onde estão agora\" agrupado por local.", phase: 9 },
+  { key: "safety_tools", label: "Safety Tools", description: "Limites e cuidados combinados para a mesa (lines & veils), com registro de ajustes feitos em sessão.", phase: 10 },
+  { key: "downtime_engine", label: "Downtime Engine", description: "Atividades de entressessões por personagem — dias necessários vs. gastos, progresso sempre derivado.", phase: 10 },
 ];
 
 export const ALL_MODULE_KEYS: ModuleKey[] = MODULE_REGISTRY.map((module) => module.key);
@@ -101,6 +103,7 @@ export const MODULE_FOR_KIND: Partial<Record<EntityKind, ModuleKey>> = {
   faction: "faction_engine",
   table: "table_engine",
   journey: "travel_engine",
+  downtime: "downtime_engine",
 };
 
 export function isKindSectionEnabled(kind: EntityKind, enabledModules: ModuleKey[]): boolean {

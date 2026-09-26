@@ -2,6 +2,7 @@ import { defaultCalendarConfig } from "../domain/calendarFields";
 import { createId } from "../domain/id";
 import { kindConfig } from "../domain/entityKindRegistry";
 import { defaultEnabledModules } from "../domain/modules";
+import { defaultSafetyToolsConfig } from "../domain/safetyToolsFields";
 import type { Campaign, CampaignData, Entity, EntityKind, Relation, RelationType, View, Visibility } from "../domain/types";
 
 export function createDefaultViews(campaignId: string): View[] {
@@ -91,6 +92,12 @@ export function createDemoCampaign(): CampaignData {
       epochLabel: "Era da Academia",
       currentDay: 132,
       log: [{ id: "seed_calendar_log_1", at: now, daysAdvanced: 132, note: "Início de campanha — meio do terceiro trimestre letivo." }],
+    },
+    safetyTools: {
+      ...defaultSafetyToolsConfig(),
+      linesAlways: ["violência sexual", "abuso infantil"],
+      veilsCareful: ["morte de animais de estimação", "espaços apertados/escuros por muito tempo"],
+      log: [{ id: "seed_safety_log_1", at: now, note: "Combinado na sessão 0: cenas na Dungeon fazem fade to black se alguém pedir." }],
     },
     createdAt: now,
     updatedAt: now,
@@ -399,6 +406,12 @@ export function createSecondDemoCampaign(): CampaignData {
       epochLabel: "Ciclo Terrestre",
       currentDay: 8,
       log: [{ id: "seed_calendar_log_1", at: now, daysAdvanced: 8, note: "Início de campanha — 8 dias de viagem até o último ponto conhecido do sinal." }],
+    },
+    safetyTools: {
+      ...defaultSafetyToolsConfig(),
+      linesAlways: ["violência sexual"],
+      veilsCareful: ["asfixia/falta de ar", "isolamento prolongado"],
+      log: [],
     },
     createdAt: now,
     updatedAt: now,

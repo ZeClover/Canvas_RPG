@@ -1,6 +1,7 @@
 import { type AlignMode, computeAlignment, computeDistribution, type DistributeAxis } from "../domain/alignment";
 import type { CalendarConfig } from "../domain/calendarFields";
 import { kindConfig } from "../domain/entityKindRegistry";
+import type { SafetyToolsConfig } from "../domain/safetyToolsFields";
 import { createId } from "../domain/id";
 import type { ModuleKey } from "../domain/modules";
 import { evaluateRulesOnce } from "../domain/rulesEngine";
@@ -520,6 +521,12 @@ export class CampaignStore {
     const nextDay = Math.max(0, config.currentDay + days);
     const entry = { id: createId("calendarlog"), at: Date.now(), daysAdvanced: days, note };
     this.updateCampaign({ calendar: { ...config, currentDay: nextDay, log: [...config.log, entry] } });
+  }
+
+  /** Safety Tools: same outside-undo reasoning as the calendar — this is
+   * agreed-upon table config, not a campaign edit to Ctrl+Z. */
+  updateSafetyTools(partial: Partial<SafetyToolsConfig>): void {
+    this.updateCampaign({ safetyTools: { ...this.state.campaign.safetyTools, ...partial } });
   }
 
   // ---- views ----------------------------------------------------------------
